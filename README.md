@@ -85,4 +85,8 @@ const reactStyleObjects = `
 */
 ```
 
-See `./oparser.test.js` for more examples
+See [`./oparser.test.js`](./oparser.test.js) for more usage examples.
+
+## Note
+
+This package uses regular expressions. Beware of [ReDoS](https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS) if using this package on the server.
