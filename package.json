@@ -1,0 +1,22 @@
+{
+  "name": "oparser",
+  "version": "1.0.0",
+  "description": "Very forgiving & nice option parser",
+  "main": "index.js",
+  "author": "David Wells",
+  "license": "MIT",
+  "keywords": ["parser", "options"],
+  "scripts": {
+    "test": "uvu . '.test.([mc]js|[jt]sx?)$'",
+    "publish": "git push origin && git push origin --tags",
+    "release:patch": "npm version patch && npm publish",
+    "release:minor": "npm version minor && npm publish",
+    "release:major": "npm version major && npm publish"
+  },
+  "dependencies": {
+    "json-alexander": "^0.1.8"
+  },
+  "devDependencies": {
+    "uvu": "^0.5.1"
+  }
+}
