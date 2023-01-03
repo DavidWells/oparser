@@ -4,6 +4,12 @@ A very forgiving key-value option parser.
 
 Converts plain text key-value pairs to useable javascript objects.
 
+## Install
+
+```
+npm install oparser
+```
+
 ## Example
 
 Handles single & multiline complex strings of key-value pairs
@@ -16,6 +22,11 @@ const str = optionsParse(`name="bob"`)
 const str = optionsParse(`name={bob}`)
 /* > output js object
 { name: 'bob' }
+*/
+
+const multipleValues = optionsParse(`a='foo' b="bar" c=zaz`)
+/* > output js object
+{ a: 'foo', b: 'bar', c: 'zaz' }
 */
 
 /* Boolean */
