@@ -14,7 +14,7 @@ const str = optionsParse(`name=bob`)
 const str = optionsParse(`name='bob'`)
 const str = optionsParse(`name="bob"`)
 const str = optionsParse(`name={bob}`)
-/* > output
+/* > output js object
 { name: 'bob' }
 */
 
@@ -25,30 +25,30 @@ const bool = optionsParse(`isCool =true`)
 const bool = optionsParse(`isCool=true`)
 const bool = optionsParse(`isCool={true}`)
 const bool = optionsParse(`isCool={{true}}`)
-/* > output
+/* > output js object
 { isCool: true }
 */
 
 /* Arrays */
 const arrayWithNumbers = optionsParse(`key=[ 1, 2, 3 ]`)
-/* > output
+/* > output js object
 { key: [ 1, 2, 3 ] }
 */
 
 const arrayWithStrings = optionsParse(`key=[ "1", "2", "3" ]`)
-/* > output
+/* > output js object
 { key: [ "1", "2", "3" ] }
 */
 
 const arrayWithNonQuotedStrings = optionsParse(`key=[ one, two, three ]`)
-/* > output
+/* > output js object
 { key: [ "one", "two", "three" ] }
 */
 
 const arrayWithMixedValues = optionsParse(`
 great={["scoot", "sco ot", 'scooo ttt', one, two, 3, 4, true]} 
 `)
-/* > output
+/* > output js object
 { great: [ 'scoot', 'sco ot', 'scooo ttt', 'one', 'two', 3, 4, true ] }
 */
 
@@ -58,7 +58,7 @@ const obj = optionsParse(`key={{ "a": b }}`)
 const obj = optionsParse(`key={{ a: "b" }}`)
 const obj = optionsParse(`key={{ a: b }}`)
 const obj = optionsParse(`key={ a : b }`)
-/* > output
+/* > output js object
 { key: { a: 'b' }}
 */
 
@@ -72,7 +72,7 @@ const reactStyleObjects = `
     }
   }}
 `
-/* > output
+/* > output js object
 {
   foo: {
     baz: {
@@ -111,8 +111,8 @@ const giantRuleyStringExample = `width={999} 
  href="https://fooo.com/start/deploy?repository=https://github.com/netlify/netlify-faunadb-example&stack=fauna"
  src="https://user-images.github{user}content.com/532272/123136878-46f1a300-d408-11eb-82f2-ad452498457b.jpg"
  deep={{ rad: 'blue', what: { nice: 'cool', wow: { deep: true } } }}`
-/* > output
-{
+/* > output js object */
+const output = {
   width: 999,
   height: 111,
   numberAsString: "12345",   
@@ -141,7 +141,6 @@ const giantRuleyStringExample = `width={999} 
   src: 'https://user-images.github{user}content.com/532272/123136878-46f1a300-d408-11eb-82f2-ad452498457b.jpg',
   deep: { rad: 'blue', what: { nice: 'cool', wow: { deep: true } } }
 }
-*/
 ```
 
 See [`./oparser.test.js`](./oparser.test.js) for more usage examples.
