@@ -1,4 +1,4 @@
-# oparse
+# oparser
 
 A very forgiving key-value option parser. 
 
