@@ -1,8 +1,8 @@
 # oparse
 
-A very tiny & forgiving option parser. 
+A very forgiving key-value option parser. 
 
-Converts plain text key-value pairs to useable JS objects.
+Converts plain text key-value pairs to useable javascript objects.
 
 ## Example
 
