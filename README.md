@@ -16,10 +16,10 @@ Handles single & multiline complex strings of key-value pairs
 
 ```js
 /* String */
-const str = optionsParse(`name=bob`)
-const str = optionsParse(`name='bob'`)
-const str = optionsParse(`name="bob"`)
-const str = optionsParse(`name={bob}`)
+const str = parse(`name=bob`)
+const str = parse(`name='bob'`)
+const str = parse(`name="bob"`)
+const str = parse(`name={bob}`)
 /* > output js object
 { name: 'bob' }
 */
@@ -30,33 +30,33 @@ const multipleValues = optionsParse(`a='foo' b="bar" c=zaz`)
 */
 
 /* Boolean */
-const bool = optionsParse(`isCool`)
-const bool = optionsParse(`isCool = true`)
-const bool = optionsParse(`isCool =true`)
-const bool = optionsParse(`isCool=true`)
-const bool = optionsParse(`isCool={true}`)
-const bool = optionsParse(`isCool={{true}}`)
+const bool = parse(`isCool`)
+const bool = parse(`isCool = true`)
+const bool = parse(`isCool =true`)
+const bool = parse(`isCool=true`)
+const bool = parse(`isCool={true}`)
+const bool = parse(`isCool={{true}}`)
 /* > output js object
 { isCool: true }
 */
 
 /* Arrays */
-const arrayWithNumbers = optionsParse(`key=[ 1, 2, 3 ]`)
+const arrayWithNumbers = parse(`key=[ 1, 2, 3 ]`)
 /* > output js object
 { key: [ 1, 2, 3 ] }
 */
 
-const arrayWithStrings = optionsParse(`key=[ "1", "2", "3" ]`)
+const arrayWithStrings = parse(`key=[ "1", "2", "3" ]`)
 /* > output js object
 { key: [ "1", "2", "3" ] }
 */
 
-const arrayWithNonQuotedStrings = optionsParse(`key=[ one, two, three ]`)
+const arrayWithNonQuotedStrings = parse(`key=[ one, two, three ]`)
 /* > output js object
 { key: [ "one", "two", "three" ] }
 */
 
-const arrayWithMixedValues = optionsParse(`
+const arrayWithMixedValues = parse(`
 great={["scoot", "sco ot", 'scooo ttt', one, two, 3, 4, true]} 
 `)
 /* > output js object
@@ -64,11 +64,11 @@ great={["scoot", "sco ot", 'scooo ttt', one, two, 3, 4, true]} 
 */
 
 /* Objects */
-const obj = optionsParse(`key={{ "a": "b" }}`)
-const obj = optionsParse(`key={{ "a": b }}`)
-const obj = optionsParse(`key={{ a: "b" }}`)
-const obj = optionsParse(`key={{ a: b }}`)
-const obj = optionsParse(`key={ a : b }`)
+const obj = parse(`key={{ "a": "b" }}`)
+const obj = parse(`key={{ "a": b }}`)
+const obj = parse(`key={{ a: "b" }}`)
+const obj = parse(`key={{ a: b }}`)
+const obj = parse(`key={ a : b }`)
 /* > output js object
 { key: { a: 'b' }}
 */

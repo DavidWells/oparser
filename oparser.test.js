@@ -1,16 +1,16 @@
 const { test } = require('uvu') 
 const assert = require('uvu/assert')
-const { optionsParse, options } = require('./')
+const { parse, stringify, options } = require('./')
 
 test('Empty value', () => {
-  assert.equal(optionsParse(), {}, 'undefined val')
-  assert.equal(optionsParse(''), {}, 'empty string')
-  assert.equal(optionsParse(null), {}, 'null')
+  assert.equal(parse(), {}, 'undefined val')
+  assert.equal(parse(''), {}, 'empty string')
+  assert.equal(parse(null), {}, 'null')
 })
 
 const stringExample = `abc=yo foo=bar baz='hello' bim='boop dop' fizz="pop" pow="bang bang"`
 test('string test', () => {
-  const parsedValue = optionsParse(stringExample)
+  const parsedValue = parse(stringExample)
   // console.log('parsedValue', parsedValue)
   assert.equal(parsedValue, {
     abc: 'yo',
@@ -24,7 +24,7 @@ test('string test', () => {
 
 const stringExampleWithBoolean = `abc=yo foo=bar bim='boop dop' boo=true`
 test('string test two', () => {
-  const parsedValue = optionsParse(stringExampleWithBoolean)
+  const parsedValue = parse(stringExampleWithBoolean)
   // console.log('parsedValue', parsedValue)
   assert.equal(parsedValue, {
     abc: 'yo',
@@ -62,7 +62,7 @@ const bigExample = `width={999} 
  deep={{ rad: 'blue', what: { nice: 'cool', wow: { deep: true } } }}`
 
 test('Multi line', () => {
-  const parsedValue = optionsParse(bigExample)
+  const parsedValue = parse(bigExample)
   // console.log('parsedValue', parsedValue)
   assert.equal(parsedValue, {
     width: 999,
@@ -115,7 +115,7 @@ const testSpacing = `width={999} 
 
 // Verify indentation doesnt matter
 test('Multi line indent', () => {
-  const parsedValue = optionsParse(testSpacing)
+  const parsedValue = parse(testSpacing)
   // console.log('parsedValue', parsedValue)
   assert.equal(parsedValue, {
     width: 999,
@@ -135,7 +135,7 @@ test('Multi line indent', () => {
 })
 
 test('Single line', () => {
-  const parsedValue = optionsParse(`width={999} height={{111}} numberAsString="12345" great={["scoot", "sco ot", 'scooo ttt']} nice={{ value: nice, cool: "true" }} soclose=[jdjdjd, hdhfhfhffh] rad="boss" cool=true isCool notCool=false nooooo={[one, two, 3, 4]}`)
+  const parsedValue = parse(`width={999} height={{111}} numberAsString="12345" great={["scoot", "sco ot", 'scooo ttt']} nice={{ value: nice, cool: "true" }} soclose=[jdjdjd, hdhfhfhffh] rad="boss" cool=true isCool notCool=false nooooo={[one, two, 3, 4]}`)
   // console.log('parsedValue', parsedValue)
   assert.equal(parsedValue, {
     width: 999,
@@ -153,34 +153,34 @@ test('Single line', () => {
 })
 
 test('Simple string equal (single quotes)', () => {
-  const parsedValue = optionsParse(`bob='cool'`)
+  const parsedValue = parse(`bob='cool'`)
   assert.equal(parsedValue, {
     bob: 'cool',
   })
 })
 
 test('Simple string equal (double quotes)', () => {
-  const parsedValue = optionsParse(`bob="cool"`)
+  const parsedValue = parse(`bob="cool"`)
   assert.equal(parsedValue, {
     bob: 'cool',
   })
 })
 
 test('Simple string equal (no quotes). key=value', () => {
-  const parsedValue = optionsParse(`bob=cool`)
+  const parsedValue = parse(`bob=cool`)
   assert.equal(parsedValue, {
     bob: 'cool',
   })
   // Booleans are booleans
-  assert.equal(optionsParse(`thingy=true`), { thingy: true })
-  assert.equal(optionsParse(`thingy=false`), { thingy: false })
+  assert.equal(parse(`thingy=true`), { thingy: true })
+  assert.equal(parse(`thingy=false`), { thingy: false })
 })
 
 test('Simple string equal (no quotes with spaces). key = value', () => {
   const answer = { bob: 'cool' }
-  const one = optionsParse(`bob = cool`)
-  const two = optionsParse(`bob= cool`)
-  const three = optionsParse(`bob =cool`)
+  const one = parse(`bob = cool`)
+  const two = parse(`bob= cool`)
+  const three = parse(`bob =cool`)
 
   // console.log('parsedValue', parsedValue)
   assert.equal(one, answer)
@@ -190,10 +190,10 @@ test('Simple string equal (no quotes with spaces). key = value', () => {
 
 test('Simple string react-like syntax. key={"value"}', () => {
   const answer = { bob: 'cool' }
-  const three = optionsParse(`bob={cool}`)
-  const four = optionsParse(`bob={'cool'}`)
-  const five = optionsParse(`bob={"cool"}`)
-  const six = optionsParse(`bob={{"cool"}}`)
+  const three = parse(`bob={cool}`)
+  const four = parse(`bob={'cool'}`)
+  const five = parse(`bob={"cool"}`)
+  const six = parse(`bob={{"cool"}}`)
   assert.equal(three, answer)
   assert.equal(four, answer)
   assert.equal(five, answer)
@@ -207,7 +207,7 @@ test('Simple strings mixed', () => {
     bill: "cool",
     steve: 'cool' 
   }
-  const one = optionsParse(`
+  const one = parse(`
   bob = cool
   joe=cool
   bill="cool"
@@ -216,47 +216,47 @@ test('Simple strings mixed', () => {
   // console.log('parsedValue', parsedValue)
   assert.equal(one, answer)
 
-  const two = optionsParse(`bob = cool joe=cool bill="cool" steve='cool'`)
+  const two = parse(`bob = cool joe=cool bill="cool" steve='cool'`)
   assert.equal(two, answer)
 })
 
 test('Simple numbers', () => {
-  const one = optionsParse(`isCool=20`)
+  const one = parse(`isCool=20`)
   assert.equal(one, { isCool: 20 })
 
-  const two = optionsParse(`isCool=20.2`)
+  const two = parse(`isCool=20.2`)
   assert.equal(two, { isCool: 20.2 })
 
-  const three = optionsParse(`isCool={20.2}`)
+  const three = parse(`isCool={20.2}`)
   assert.equal(three, { isCool: 20.2 })
 
-  const four = optionsParse(`isCool={{20.2}}`)
+  const four = parse(`isCool={{20.2}}`)
   assert.equal(four, { isCool: 20.2 })
 
-  const five = optionsParse(`isCool=0`)
+  const five = parse(`isCool=0`)
   assert.equal(five, { isCool: 0 })
 
-  const sixAsString = optionsParse(`isCool="0"`)
+  const sixAsString = parse(`isCool="0"`)
   assert.equal(sixAsString, { isCool: "0" })
 
-  const decimal = optionsParse(`isCool=0.22`)
+  const decimal = parse(`isCool=0.22`)
   assert.equal(decimal, { isCool: 0.22 })
 
-  const brackets = optionsParse(`isCool={0.22}`)
+  const brackets = parse(`isCool={0.22}`)
   assert.equal(brackets, { isCool: 0.22 })
 })
 
 test('Simple boolean', () => {
   const answer = { isCool: true }
-  const one = optionsParse(`isCool`)
-  const two = optionsParse(`isCool = true`)
-  const three = optionsParse(`isCool =true`)
-  const four = optionsParse(`isCool=true`)
-  const fourx = optionsParse(`isCool={true}`)
-  const foury = optionsParse(`isCool={{true}}`)
-  const boolString = optionsParse(`isCool="true"`)
-  const boolStringTwo = optionsParse(`isCool='true'`)
-  const boolStringThree = optionsParse(`isCool={'true'}`)
+  const one = parse(`isCool`)
+  const two = parse(`isCool = true`)
+  const three = parse(`isCool =true`)
+  const four = parse(`isCool=true`)
+  const fourx = parse(`isCool={true}`)
+  const foury = parse(`isCool={{true}}`)
+  const boolString = parse(`isCool="true"`)
+  const boolStringTwo = parse(`isCool='true'`)
+  const boolStringThree = parse(`isCool={'true'}`)
 
   assert.equal(one, answer)
   assert.equal(two, answer)
@@ -269,16 +269,16 @@ test('Simple boolean', () => {
   assert.equal(boolStringThree, { isCool: 'true' })
 
   const answerTwo = { isNotCool: false }
-  const five = optionsParse(`isNotCool=false`)
-  const six = optionsParse(`isNotCool = false`)
-  const seven = optionsParse(`isNotCool =false`)
-  const eight = optionsParse(`isNotCool=false`)
-  const nine = optionsParse(`isNotCool= false`)
-  const ten = optionsParse(`isNotCool={false}`)
-  const eleven = optionsParse(`isNotCool={{false}}`)
-  const boolStringFalse = optionsParse(`isNotCool="false"`)
-  const boolStringFalseTwo = optionsParse(`isNotCool='false'`)
-  const boolStringFalseThree = optionsParse(`isNotCool={'false'}`)
+  const five = parse(`isNotCool=false`)
+  const six = parse(`isNotCool = false`)
+  const seven = parse(`isNotCool =false`)
+  const eight = parse(`isNotCool=false`)
+  const nine = parse(`isNotCool= false`)
+  const ten = parse(`isNotCool={false}`)
+  const eleven = parse(`isNotCool={{false}}`)
+  const boolStringFalse = parse(`isNotCool="false"`)
+  const boolStringFalseTwo = parse(`isNotCool='false'`)
+  const boolStringFalseThree = parse(`isNotCool={'false'}`)
 
   assert.equal(five, answerTwo, 'five')
   assert.equal(six, answerTwo, 'six')
@@ -303,7 +303,7 @@ test('Multiline boolean', () => {
     steve: 'cool',
     isCool: true
   }
-  const one = optionsParse(`
+  const one = parse(`
   bob = cool
   joe=cool
   isRad
@@ -319,16 +319,16 @@ test('Multiline boolean', () => {
 
 test('Simple object', () => {
   const a = { key: { a: 'b' }}
-  assert.equal(a, optionsParse(`key={{ "a": "b" }}`))
-  assert.equal(a, optionsParse(`key={{ "a": b }}`))
-  assert.equal(a, optionsParse(`key={{ a: "b" }}`))
-  assert.equal(a, optionsParse(`key={{ a: b }}`))
-  assert.equal(a, optionsParse(`key={ a : b }`), 'single {')
+  assert.equal(a, parse(`key={{ "a": "b" }}`))
+  assert.equal(a, parse(`key={{ "a": b }}`))
+  assert.equal(a, parse(`key={{ a: "b" }}`))
+  assert.equal(a, parse(`key={{ a: b }}`))
+  assert.equal(a, parse(`key={ a : b }`), 'single {')
 
   const answer = { nice: { value: 'nice', cool: 'true', awesome: false } }
-  const one = optionsParse(`nice={{ value: nice, cool: "true", awesome: false, }}`)
+  const one = parse(`nice={{ value: nice, cool: "true", awesome: false, }}`)
   assert.equal(one, answer)
-  const two = optionsParse(`nice={{
+  const two = parse(`nice={{
     value: nice,
     cool: "true",
     awesome: false
@@ -337,19 +337,19 @@ test('Simple object', () => {
 })
 
 test('Object in quotes is string', () => {
-  const a = optionsParse(`key="{ xjsjsj }"`)
+  const a = parse(`key="{ xjsjsj }"`)
   assert.equal(a, {
     key: "{ xjsjsj }"
   }, 'a')
-  const b = optionsParse(`key='{ foo:bar }'`)
+  const b = parse(`key='{ foo:bar }'`)
   assert.equal(b, {
     key: "{ foo:bar }"
   }, 'b')
-  const c = optionsParse(`key='{ "foo": "bar" }'`)
+  const c = parse(`key='{ "foo": "bar" }'`)
   assert.equal(c, {
     key: '{ "foo": "bar" }'
   }, 'c')
-  const d = optionsParse(`key='{{ "foo": "bar" }}'`)
+  const d = parse(`key='{{ "foo": "bar" }}'`)
   assert.equal(d, {
     key: '{{ "foo": "bar" }}'
   }, 'd')
@@ -365,7 +365,7 @@ test('Deep object', () => {
       }
     }}
   `
-  const val = optionsParse(doubleBracket)
+  const val = parse(doubleBracket)
   assert.equal(val, {
     foo: {
       baz: {
@@ -385,7 +385,7 @@ test('Deep object', () => {
       }
     }
   `
-  const valTwo = optionsParse(singleBracket)
+  const valTwo = parse(singleBracket)
   assert.equal(valTwo, {
     foo: {
       baz: {
@@ -408,7 +408,7 @@ test('Deep object with quotes', () => {
       }
     }
   `
-  const valThree = optionsParse(withQuotes)
+  const valThree = parse(withQuotes)
   assert.equal(valThree, {
     foo: {
       baz: {
@@ -423,25 +423,25 @@ test('Deep object with quotes', () => {
 
 test('Simple array', () => {
   const x = { key: [ 1, 2, 3 ] }
-  const y = optionsParse(`key=[ 1, 2, 3 ]`)
+  const y = parse(`key=[ 1, 2, 3 ]`)
   assert.equal(x, y)
 
-  const z = optionsParse(`key=[ "1", "2", "3" ]`)
+  const z = parse(`key=[ "1", "2", "3" ]`)
   assert.equal(z, { key: [ "1", "2", "3" ] })
 
-  const trailingComma = optionsParse(`key=[ "1", "2", "3", ]`)
+  const trailingComma = parse(`key=[ "1", "2", "3", ]`)
   assert.equal(trailingComma, { key: [ "1", "2", "3" ] })
 
-  const a = optionsParse(`key=[ one, two, three ]`)
+  const a = parse(`key=[ one, two, three ]`)
   assert.equal(a, { key: [ "one", "two", "three" ] })
 
   const answer = { great: [ 'scoot', 'sco ot', 'scooo ttt', 'one', 'two', 3, 4, true ] }
-  const one = optionsParse(`great={["scoot", "sco ot", 'scooo ttt', one, two, 3, 4, true]} `)
+  const one = parse(`great={["scoot", "sco ot", 'scooo ttt', one, two, 3, 4, true]} `)
   assert.equal(one, answer)
 })
 
 test('Complex array with array', () => {
-  const a = optionsParse(`
+  const a = parse(`
   key=[ true, two, "three", 2, ["nested", "array"], ["nested", "arrayTwo"]]`)
   assert.equal(a, {
     key: [ 
@@ -454,7 +454,7 @@ test('Complex array with array', () => {
     ] 
   })
 
-  const multiLineArray = optionsParse(`
+  const multiLineArray = parse(`
   key={[
     true,
     two,
@@ -476,7 +476,7 @@ test('Complex array with array', () => {
 })
 
 test('Complex array with object', () => {
-  const a = optionsParse(`
+  const a = parse(`
   key=[ true, two, "three", 2, { 
     foo: {
       baz: {
@@ -522,7 +522,7 @@ test('Mixed array syntax', () => {
   notArrayFour='[wrapped, in, quotes]'
   notArrayFive="[wrapped, in, doublequotes]"
   `
-  const parsedValue = optionsParse(smallExample)
+  const parsedValue = parse(smallExample)
   // console.log('parsedValue', parsedValue)
   assert.equal(parsedValue, {
     lines: [ 3, 7 ],
@@ -549,7 +549,7 @@ test('Strings are NOT arrays', () => {
   notArrayFour='[wrapped, in, quotes]'
   notArrayFive="[wrapped, in, doublequotes]"
   `
-  const parsedValue = optionsParse(smallExample)
+  const parsedValue = parse(smallExample)
   //console.log('parsedValue', parsedValue)
   assert.equal(parsedValue, {
     lines: [ 3, 7 ],
@@ -571,7 +571,7 @@ test('oddly "broken" inner quotes', () => {
   // c="tons of" weird inner quotes" // this doesnt work
   d="bar"
   `
-  const parsedValue = optionsParse(smallExample)
+  const parsedValue = parse(smallExample)
   // console.log('parsedValue', parsedValue)
   assert.equal(parsedValue, {
     x: "[foo'bar]",
@@ -586,28 +586,28 @@ test('oddly "broken" inner quotes', () => {
 })
 
 test('Single quotes inside double quotes', () => {
-  const one = optionsParse(`bob="co'ol" steve="co'ol"`)
+  const one = parse(`bob="co'ol" steve="co'ol"`)
   // console.log('parsedValue', parsedValue)
   assert.equal(one, {
     bob: "co'ol",
     steve: "co'ol",
   }, 'one')
 
-  const two = optionsParse(`bob='co "ol' steve='co"ol'`)
+  const two = parse(`bob='co "ol' steve='co"ol'`)
   // console.log('parsedValue', parsedValue)
   assert.equal(two, {
     bob: "co \"ol",
     steve: "co\"ol",
   }, 'two')
 
-  const three = optionsParse(`bob="co ol" steve="co ol"`)
+  const three = parse(`bob="co ol" steve="co ol"`)
   // console.log('parsedValue', parsedValue)
   assert.equal(three, {
     bob: "co ol",
     steve: "co ol",
   }, 'three')
 
-  const four = optionsParse(`bob='co "ol' steve='co""""ol'`)
+  const four = parse(`bob='co "ol' steve='co""""ol'`)
   // console.log('parsedValue', parsedValue)
   assert.equal(four, {
     bob: "co \"ol",
@@ -615,22 +615,22 @@ test('Single quotes inside double quotes', () => {
     steve: 'co""""ol'
   })
 
-  const five = optionsParse(`title='Wow "this" is great'`)
+  const five = parse(`title='Wow "this" is great'`)
   assert.equal(five, {
     title: 'Wow "this" is great',
   })
 
-  const six = optionsParse(`title="Wow \"this\" is great"`)
+  const six = parse(`title="Wow \"this\" is great"`)
   assert.equal(six, {
     title: 'Wow "this" is great',
   })
 
-  const seven = optionsParse(`title='Wow "this" is great'`)
+  const seven = parse(`title='Wow "this" is great'`)
   assert.equal(seven, {
     title: 'Wow "this" is great',
   })
 
-  const eight = optionsParse(`title='Wow \'this\' is great'`)
+  const eight = parse(`title='Wow \'this\' is great'`)
   assert.equal(eight, {
     title: "Wow 'this' is great",
   })
@@ -643,7 +643,7 @@ test('Remove single line comments', () => {
     bill: "cool",
     steve: 'cool',
   }
-  const one = optionsParse(`
+  const one = parse(`
   bob = cool
   # Remove this
   joe=cool
@@ -664,7 +664,7 @@ test('Remove multi line comments', () => {
     steve: 'cool',
     jim: 'dope'
   }
-  const one = optionsParse(`
+  const one = parse(`
   bob = cool
   # Remove this
   # And this Remove this
@@ -698,7 +698,7 @@ test('Remove multi line comments two', () => {
     bob: 'cool',
     bill: "cool",
   }
-  const one = optionsParse(`
+  const one = parse(`
 bob = cool
 /* 
 bobby="rad"
@@ -716,7 +716,7 @@ test('Handles inner double quotes', () => {
   const answer = { 
     funny: 'wh"at',
   }
-  const one = optionsParse(`
+  const one = parse(`
   funny='wh"at'
   `)
   //console.log('parsedValue', one)
@@ -727,7 +727,7 @@ test('Handles inner single quotes', () => {
   const answer = { 
     funny: "wh'at",
   }
-  const one = optionsParse(`
+  const one = parse(`
   funny="wh'at"
   `)
   // console.log('parsedValue', parsedValue)
@@ -738,15 +738,15 @@ test('Handles inner equals =', () => {
   const answer = { 
     funny: "wh=at",
   }
-  const one = optionsParse(`
+  const one = parse(`
   funny="wh=at"
   `)
   assert.equal(one, answer, 'one')
-  const two = optionsParse(`
+  const two = parse(`
   funny=wh=at
   `)
   assert.equal(two, answer, 'two')
-  const three = optionsParse(`
+  const three = parse(`
   funny='wh=at'
   `)
   assert.equal(three, answer, 'three')
@@ -756,7 +756,7 @@ test('Handles escaped double quotes', () => {
   const answer = { 
     funny: "wh\"at",
   }
-  const one = optionsParse(`
+  const one = parse(`
   funny="wh\"at",
   `)
   // console.log('parsedValue', parsedValue)
@@ -767,7 +767,7 @@ test('Handles escaped single quotes', () => {
   const answer = { 
     funny: 'wh\'at',
   }
-  const one = optionsParse(`
+  const one = parse(`
   funny='wh\'at',
   `)
   // console.log('parsedValue', parsedValue)
@@ -775,7 +775,7 @@ test('Handles escaped single quotes', () => {
 })
 
 test('Handles commas after key/values', () => {
-  const one = optionsParse(`funny='what', funky="cool", woah="co,ol", weird=what,`)
+  const one = parse(`funny='what', funky="cool", woah="co,ol", weird=what,`)
   // console.log('parsedValue', one)
   assert.equal(one, { 
     funny: 'what',
@@ -786,7 +786,7 @@ test('Handles commas after key/values', () => {
 })
 
 test('Handles commas after key/values multiline', () => {
-  const one = optionsParse(`
+  const one = parse(`
   funny='what',
   funky="cool",,,,
   woah="co,ol",
@@ -810,7 +810,7 @@ test('Handles *', () => {
     haha: "***",
     rad: "*****"
   }
-  const one = optionsParse(`
+  const one = parse(`
   funny='*'
   cool=*!
   wow=*-*
@@ -833,7 +833,7 @@ test('Handles inner curly brackets {}', () => {
     six: "{{weirdval}}",
     seven: "{{weirdval}}"
   }
-  const one = optionsParse(`
+  const one = parse(`
   funny='\${funky}'
   one=weirdval}}}
   two={{weirdval}}}
@@ -852,7 +852,7 @@ test('Handles inner brackets []', () => {
     nice: '[whatever]x',
     funny: '[[coool]]',
   }
-  const one = optionsParse(`
+  const one = parse(`
   nice='[whatever]x'
   funny="[[coool]]"
   `)
@@ -861,37 +861,37 @@ test('Handles inner brackets []', () => {
 })
 
 test('Handles variable syntax values', () => {
-  const one = optionsParse("nice=${file(./foo.js)}")
+  const one = parse("nice=${file(./foo.js)}")
   assert.equal(one, {
     nice: '${file(./foo.js)}',
   })
-  const two = optionsParse("nice='${file(./foo.js)}'")
+  const two = parse("nice='${file(./foo.js)}'")
   assert.equal(two, {
     nice: '${file(./foo.js)}',
   })
-  const three = optionsParse(`nice='\${file("./foo.js")}'`)
+  const three = parse(`nice='\${file("./foo.js")}'`)
   assert.equal(three, {
     nice: '${file("./foo.js")}',
   })
-  const four = optionsParse(`nice='\${self:custom.stage}'`)
+  const four = parse(`nice='\${self:custom.stage}'`)
   assert.equal(four, {
     nice: '${self:custom.stage}',
   })
 })
 
 test('Handles ${}', () => {
-  const one = optionsParse("what=arn:aws:sns:${self:custom.region}:*:${self:custom.topicName}")
+  const one = parse("what=arn:aws:sns:${self:custom.region}:*:${self:custom.topicName}")
   assert.equal(one, {
     what: 'arn:aws:sns:${self:custom.region}:*:${self:custom.topicName}',
   })
-  const two = optionsParse("what=*********")
+  const two = parse("what=*********")
   assert.equal(two, {
     what: '*********',
   })
 })
 
 test('Handles emojis', () => {
-  const one = optionsParse(`
+  const one = parse(`
   what='😃'
   cool='xyz😃'
   `)
@@ -902,41 +902,41 @@ test('Handles emojis', () => {
 })
 
 test('Handles periods', () => {
-  const one = optionsParse("what=no.md")
+  const one = parse("what=no.md")
   assert.equal(one, {
     what: 'no.md',
   })
-  const two = optionsParse("what='no.md'")
+  const two = parse("what='no.md'")
   assert.equal(two, {
     what: 'no.md',
   })
-  const three = optionsParse('what="no.md"')
+  const three = parse('what="no.md"')
   assert.equal(three, {
     what: 'no.md',
   })
 })
 
 test('Handles commas', () => {
-  const one = optionsParse("what=no,md")
+  const one = parse("what=no,md")
   assert.equal(one, {
     what: 'no,md',
   })
-  const two = optionsParse("what='no,md'")
+  const two = parse("what='no,md'")
   assert.equal(two, {
     what: 'no,md',
   })
-  const three = optionsParse('what="no,md"')
+  const three = parse('what="no,md"')
   assert.equal(three, {
     what: 'no,md',
   })
-  const trimExtraTrailingComma = optionsParse('what="no,md",')
+  const trimExtraTrailingComma = parse('what="no,md",')
   assert.equal(trimExtraTrailingComma, {
     what: 'no,md',
   })
 })
 
 test('Handles multiline values (indentation matters)', () => {
-  const one = optionsParse(`
+  const one = parse(`
   what="
 import {foo} from 'lodash'
 import {bar} from 'lodash'
@@ -952,7 +952,7 @@ import {zaz} from 'lodash'
 })
 
 test('Handles multiline values two (indentation matters)', () => {
-  const one = optionsParse(`
+  const one = parse(`
   what="
     import {foo} from 'lodash'
     import {bar} from 'lodash'
@@ -969,7 +969,7 @@ test('Handles multiline values two (indentation matters)', () => {
 })
 
 test('Handles multiline values single quotes (indentation matters)', () => {
-  const one = optionsParse(`
+  const one = parse(`
   baz="yolo"
   what='
     import {foo} from 'lodash'
@@ -990,7 +990,7 @@ test('Handles multiline values single quotes (indentation matters)', () => {
 })
 
 test('Handles multiline values {`reactStyle`}', () => {
-  const one = optionsParse(`
+  const one = parse(`
   baz="yolo"
   what={\`
 import {foo} from 'lodash'
@@ -1012,7 +1012,7 @@ import {zaz} from 'lodash'
 
 // Doesnt work need to wrap in {} brackets
 test.skip('Handles multiline values wrapped in ``', () => {
-  const one = optionsParse(`
+  const one = parse(`
   baz="yolo"
   what=\`
 import {foo} from 'lodash'
@@ -1034,7 +1034,7 @@ import {zaz} from 'lodash'
 })
 
 test('Handles multiline values lorum ipsum', () => {
-  const one = optionsParse(`
+  const one = parse(`
   baz="yolo"
   what={\`
   Lorem ipsum dolor sit amet, has te paulo sententiae argumentum, ius id saepe moderatius adversarium. 
@@ -1057,7 +1057,7 @@ test('Handles multiline values lorum ipsum', () => {
 })
 
 test('Big array', () => {
-  const one = optionsParse(`
+  const one = parse(`
 foo=[
   {
     color: "red",
@@ -1116,7 +1116,7 @@ foo=[
 })
 
 test('Big array react style', () => {
-  const one = optionsParse(`
+  const one = parse(`
 foo={[
   {
     color: "red",
@@ -1183,7 +1183,7 @@ foo={[
 })
 
 test('Handles Multiline breaks', () => {
-  const one = optionsParse(`
+  const one = parse(`
 
   foo='bar'
 
@@ -1206,12 +1206,12 @@ test('Handles Multiline breaks', () => {
 })
 
 test('Weird ones', () => {
-  const one = optionsParse("debug 1")
+  const one = parse("debug 1")
   assert.equal(one, {
     debug: true,
     1: true,
   })
-  const two = optionsParse("_debug 33")
+  const two = parse("_debug 33")
   assert.equal(two, {
     _debug: true,
     33: true,
@@ -1234,6 +1234,25 @@ test('Template tage ones', () => {
     bob: 'xyz',
     lol: 'cool',
   })
+})
+
+
+test('stringify', () => {
+  const props = {
+    text: 'hello',
+    boolean: true,
+    array: ['hi', 'there', true],
+    object: {
+      cool: true,
+      nice: 'awesome'
+    },
+    func: () => {},
+    nullish: null,
+    undef: undefined
+  }
+
+  const optsString = stringify(props)
+  assert.equal(optsString, 'text="hello" boolean=true array={["hi", "there", true]} object={{"cool": true, "nice": "awesome"}}')
 })
 
 test.run()
