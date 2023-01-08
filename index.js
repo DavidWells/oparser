@@ -177,12 +177,16 @@ function parse(input) {
     .replace(/\n(?=(?:(?:[^']*(?:')){2})*[^']*(?:')[^']*$)/g, NEWLINE)
     .replace(/\n(?=(?:(?:[^`]*(?:`)){2})*[^`]*(?:`)[^`]*$)/g, NEWLINE)
     /* Temporarily replace spaces with placeholder */
+    // onClick={() => {console.log('h i') }} --> add temp spaces
+    // https://regex101.com/r/16L0FZ/2 this works but probably dont need... TODO maybe remove
+    .replace(/\{(\(.*\))(\s*)=>(\s*){?([^}]*)+[^}]?}/gm, `{$1${SPACES}=>${SPACES}$4}`)
     // bob="co ol" steve="c ool" --> add temp spaces
     .replace(/\s(?=(?:(?:[^"]*(?:")){2})*[^"]*(?:")[^"]*$)/g, SPACES)
     // bob='co ol' steve='c ool' --> add temp spaces
     .replace(/\s(?=(?:(?:[^']*(?:')){2})*[^']*(?:')[^']*$)/g, SPACES)
     // bob=`co ol` steve=`c ool` --> add temp spaces
     .replace(/\s(?=(?:(?:[^`]*(?:`)){2})*[^`]*(?:`)[^`]*$)/g, SPACES)
+
     // .replace(/ /g, SPACES)
     // matchspaces inside quotes https://regex101.com/r/DqJ4TD/1
     // .replace(/\s+(?=(?:(?:[^"']*(?:"|')){2})*[^"']*(?:"|')[^"']*$)/g, SPACES)
@@ -198,10 +202,9 @@ function parse(input) {
     // .map((x) => x.trim().replace(/ /g, SPACES)) // c="tons of" weird inner quotes"
     .join('\n')
     //.replace(/ /g, SPACES)
-  //console.log('cleanLines', cleanLines)
 
   var lines = cleanLines
-    .replace(/__SPACE__([a-zA-Z]*)=/g, `${BREAK}$1=`)
+    .replace(/__SPACE__([a-zA-Z]+)=/g, `${BREAK}$1=`)
     // Fix out of option new line replacements https://regex101.com/r/ttlXyt/1
     .replace(/__NEWLINE__(?:__SPACE__)*__OPT_BREAK__/g, BREAK)
     .match(pattern)
@@ -211,7 +214,10 @@ function parse(input) {
       return item.split(BREAK)
     }).flat()
 
-  // console.log('lines', lines)
+  /*
+  console.log('cleanLines', cleanLines)
+  console.log('lines', lines)
+  /** */
   var isEnding = /(['"}\]]|true,?|false,?)$/
   // var isEnding = /(['"}\]]|true,?|false,?|[A-Za-z0-9"']+,?)$/ // false positive on arrays
   var isKeyValNoQuotes = /^[A-Za-z]+=[A-Za-z0-9!*_\-\/\\]/
@@ -389,7 +395,7 @@ function hasEmoji(str) {
 function getKeyAndValueFromString(string, callLocation) {
   /*
   console.log(`getKeyAndValueFromString from ${callLocation}`)
-  console.log(`|${string}|`)
+  console.log(`>>>> "${string}"`)
   /** */
   if (!string) return
   // const keyValueRegex = /([A-Za-z-_$]+)=['{"]?(.*)['}"]?/g

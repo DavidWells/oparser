@@ -1255,4 +1255,40 @@ test('stringify', () => {
   assert.equal(optsString, 'text="hello" boolean=true array={["hi", "there", true]} object={{"cool": true, "nice": "awesome"}}')
 })
 
+
+test('reactProp func', () => {
+  assert.equal(parse(`onClick={hi}`), {
+    onClick: 'hi',
+  }, 'onClick={hi}')
+
+  assert.equal(parse(`onClick={()}`), {
+    onClick: '()',
+  }, 'onClick={()}')
+
+  const three = `onClick={() => console.log('h i')}`
+  assert.equal(parse(three), {
+    onClick: "() => console.log('h i')",
+  }, 'three')
+
+  const four = `onClick={{() => console.log('h i')}}`
+  assert.equal(parse(four), {
+    onClick: "() => console.log('h i')",
+  }, 'four')
+
+  const five = `isCool onClick={"() => { console.log('h i')}"}`
+  // console.log('five', five)
+  assert.equal(parse(five), {
+    isCool: true,
+    onClick: "() => { console.log('h i')}",
+  }, 'five')
+
+  // const six = `onClick=() => {
+  //   console.log('h i')
+  //   console.log("cool stuuf")
+  // }`
+  // assert.equal(parse(six), {
+  //   onClick: "() => { console.log('h i')}",
+  // }, six)
+})
+
 test.run()
