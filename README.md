@@ -4,6 +4,8 @@ A very forgiving key-value option parser.
 
 Converts plain text key-value pairs to useable javascript objects.
 
+See [`oparser.test.js`](https://github.com/DavidWells/oparser/blob/master/oparser.test.js) for more usage examples.
+
 ## Install
 
 ```
@@ -154,7 +156,7 @@ const output = {
 }
 ```
 
-See [`./oparser.test.js`](./oparser.test.js) for more usage examples.
+See [`oparser.test.js`](https://github.com/DavidWells/oparser/blob/master/oparser.test.js) for more usage examples.
 
 ## Note
 

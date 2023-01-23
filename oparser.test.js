@@ -1010,8 +1010,17 @@ import {zaz} from 'lodash'
   })
 })
 
-// Doesnt work need to wrap in {} brackets
-test.skip('Handles multiline values wrapped in ``', () => {
+test('Handles multiline values wrapped in ``', () => {
+  const answer = {
+    baz: 'yolo',
+    what: `
+import {foo} from 'lodash'
+import {bar} from "lodash"
+import {zaz} from 'lodash'
+  `,
+    bar: true,
+  }
+
   const one = parse(`
   baz="yolo"
   what=\`
@@ -1021,16 +1030,44 @@ import {zaz} from 'lodash'
   \`
   bar=true
   `)
-  console.log('one', one)
-  assert.equal(one, {
-    baz: 'yolo',
-    what: `
+  // console.log('one', one)
+  assert.equal(one, answer, 'one')
+
+  const two = parse(`
+  baz="yolo"
+  what="
 import {foo} from 'lodash'
 import {bar} from "lodash"
 import {zaz} from 'lodash'
-  `,
-   bar: true
-  })
+  "
+  bar=true
+  `)
+  // console.log('two', two)
+
+  assert.equal(two, answer, 'two')
+
+  const three = parse(`
+  baz="yolo"
+  what='
+import {foo} from 'lodash'
+import {bar} from "lodash"
+import {zaz} from 'lodash'
+  '
+  bar=true
+  `)
+  assert.equal(three, answer, 'three')
+
+
+  const four = parse(`
+  baz="yolo"
+  what={\`
+import {foo} from 'lodash'
+import {bar} from "lodash"
+import {zaz} from 'lodash'
+  \`}
+  bar=true
+  `)
+  assert.equal(four, answer, 'four')
 })
 
 test('Handles multiline values lorum ipsum', () => {
@@ -1253,6 +1290,15 @@ test('stringify', () => {
 
   const optsString = stringify(props)
   assert.equal(optsString, 'text="hello" boolean=true array={["hi", "there", true]} object={{"cool": true, "nice": "awesome"}}')
+
+  const optsStringTwo = stringify(props, { separator: '\n' })
+  // console.log('optsStringTwo', optsStringTwo)
+  assert.equal(optsStringTwo, `
+text="hello"
+boolean=true
+array={["hi", "there", true]}
+object={{"cool": true, "nice": "awesome"}}
+`.trim())
 })
 
 

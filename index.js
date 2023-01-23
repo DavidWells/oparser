@@ -360,10 +360,12 @@ function parse(input) {
     [RESERVED]: '',
   })
 
-  // console.log('values', values)
+  /* If leftover values, parse leftovers */
+  const leftOver = (values[RESERVED]) ? parse(values[RESERVED]) : false
+
   delete values[RESERVED]
 
-  return values
+  return leftOver ? Object.assign(values, leftOver) : values
 }
 
 function isValuePair(str) {
