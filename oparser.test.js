@@ -1337,4 +1337,39 @@ test('reactProp func', () => {
   // }, six)
 })
 
+
+test('parse multiline `values`', t => {
+  const three = `text={\`multi
+
+line
+
+text\`} author="Author"`
+  const result = parse(three)
+  // console.log('result', result)
+  assert.equal(result, { 
+    text: 'multi\n\nline\n\ntext', 
+    author: 'Author' 
+  })
+})
+
+
+test('stringify multiline values with `', t => {
+  const x = {
+    text: `multi
+
+line
+
+text`,
+    author: 'Author'
+  }
+  const str = stringify(x)
+  // console.log('x', str)
+  assert.is(str, `text={\`multi
+
+line
+
+text\`} author="Author"`)
+})
+
+
 test.run()

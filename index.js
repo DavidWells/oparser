@@ -513,8 +513,8 @@ function stringify(obj, opts = {}) {
       const type = typeof val
       return type !== 'undefined' && val !== null && type !== 'function'
     })
-    .map(([attr, val]) => {
-      const value = format(val)
+    .map(([attr, val], i) => {
+      let value = format(val)
       /* return array of items */
       if (Array.isArray(value)) {
         const mapped = format(val)
@@ -522,6 +522,10 @@ function stringify(obj, opts = {}) {
       }
       if (typeof val === 'object') {
         return `${attr}${joiner}{${stringifyWithSpaces(val)}}`
+      }
+      /* wrap in brackets for multiline values */
+      if (typeof val === 'string' && value.indexOf('\n') > -1) {
+        value = `{${value.replace(/^"|"$/g, '`')}}`
       }
       return `${attr}${joiner}${value}`
     }).join(opts.separator || ' ')
