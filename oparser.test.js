@@ -1372,4 +1372,27 @@ text\`} author="Author"`)
 })
 
 
+test('Handles wierd emoji cases', () => {
+  const one = parse(`⛔️ `)
+  assert.equal(one, {})
+
+  const two = parse(`⛔️`)
+  assert.equal(two, {})
+
+  const four = parse(`⛔️😅`)
+  assert.equal(four, {})
+
+  const five = parse(`⛔️😅 haha=true`)
+  assert.equal(five, {
+    haha: true
+  })
+
+  const three = parse(`x⛔️=true`)
+  assert.equal(three, {
+    'x⛔️': true
+  })
+})
+
+
+
 test.run()

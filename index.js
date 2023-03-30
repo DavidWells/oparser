@@ -361,7 +361,8 @@ function parse(input) {
   })
 
   /* If leftover values, parse leftovers */
-  const leftOver = (values[RESERVED]) ? parse(values[RESERVED]) : false
+  // console.log('values[RESERVED]', `"${values[RESERVED]}"`)
+  const leftOver = (values[RESERVED] && values[RESERVED].match(STARTS_WITH_VALID_CHAR)) ? parse(values[RESERVED]) : false
 
   delete values[RESERVED]
 
@@ -409,6 +410,8 @@ function getKeyAndValueFromString(string, callLocation) {
   const [key] = string.split('=')
   /* If no key or key starts with --- */
   if (!key || key.charAt(0) === '-' || hasEmoji(key)) {
+    // console.log('string', string)
+    // console.log('hasEmoji', hasEmoji)
     return
   }
   // console.log('string', string)
