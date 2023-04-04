@@ -135,8 +135,7 @@ test('Multi line indent', () => {
 })
 
 test('Single line', () => {
-  const parsedValue = parse(`width={999} height={{111}} numberAsString="12345" great={["scoot", "sco ot", 'scooo ttt']} nice={{ value: nice, cool: "true" }} soclose=[jdjdjd, hdhfhfhffh] rad="boss" cool=true isCool notCool=false nooooo={[one, two, 3, 4]}`)
-  // console.log('parsedValue', parsedValue)
+const parsedValue = parse(`width={999} height={{111}} numberAsString="12345" great={["scoot", "sco ot", 'scooo ttt']} nice={{ value: nice, cool: "true" }} soclose=[jdjdjd, hdhfhfhffh] rad="boss" cool=true isCool notCool=false nooooo={[one, two, 3, 4]}`)  // console.log('parsedValue', parsedValue)
   assert.equal(parsedValue, {
     width: 999,
     height: 111,
@@ -1393,6 +1392,48 @@ test('Handles wierd emoji cases', () => {
   })
 })
 
+test('Odd object with missing quotes', () => {
+  const one = parse('val={ name: John Doe }')
+  // console.log('one', one)
+  assert.equal(one, {
+    'val': {
+      name: 'John Doe',
+    }
+  })
 
+  const two = parse('val={ name: John Doe, }')
+  assert.equal(two, {
+    'val': {
+      name: 'John Doe',
+    }
+  })
+
+  const three = parse('val={ name: John Doe, bob: dole }')
+  assert.equal(three, {
+    'val': {
+      name: 'John Doe',
+      bob: 'dole'
+    }
+  })
+
+  const four = parse('val={ name: John Doe, bob: dole, billy: the kid }')
+  assert.equal(four, {
+    'val': {
+      name: 'John Doe',
+      bob: 'dole',
+      billy: "the kid"
+    }
+  })
+
+  // This is broken... probably wont support 
+  // const four = parse('val={ name: John Doe, bob: dole, bill: ["one", "two", true ] }')
+  // assert.equal(four, {
+  //   'val': {
+  //     name: 'John Doe',
+  //     bob: 'dole',
+  //     bill: ["one", "two", true ]
+  //   }
+  // })
+})
 
 test.run()

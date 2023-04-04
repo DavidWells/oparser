@@ -45,24 +45,35 @@ function convert(value) {
       value = value.replace(TRAILING_ARRAY_COMMAS, ']')
     } else if (isObjectLike(value)) {
       /* Trim trailing commas in object */
-      value = value.replace(TRAILING_OBJECT_COMMAS, '}')
+      value = value.replace(TRAILING_OBJECT_COMMAS, ' }')
     }
     const val = parseJSON(value) // last attempt to format an array like [ one, two ]
-    // console.log('parseJSON val', val)
-    // if (typeof val === 'string' && val.match(/^\[/) && val.match(/\]$/)) {
-    //   const inner = val.match(/^\[(.*)\]/)
-    //   if (inner && inner[1]) {
-    //     const newVal = inner[1].split(', ').map((x) => {
-    //       return convert(x.trim())
-    //     })
-    //     return newVal
-    //   }
-    // }
-    // console.log('post parse', value)
     return val
   } catch (err) {
     // console.log('parse error', err)
     // console.log('json val', value)
+
+    /* Convert object looking string into values */
+    if (isObjectLike(value) && value.indexOf(':') > -1) {
+      const inner = value.replace(/^{|}$/g, '')
+      const kvs = inner.split(',')
+      // console.log('inner', inner)
+      // console.log('kvs', kvs)
+      const newObjectString = kvs.reduce((acc, curr) => {
+        const parts = curr.trim().split(':')
+        if (parts.length !== 2) {
+          return acc
+        }
+        const k = parts[0].trim()
+        const v = parts[1].trim()
+        acc += `"${k}": "${v}",`
+        // console.log('parts', parts)
+        return acc
+      }, '')
+      const objToTry =`{ ${newObjectString.replace(/,$/, '')} }`
+      // console.log('objToTry', objToTry)
+      return parseJSON(objToTry)
+    }
     /* Convert array looking string into values */
     if (typeof value === 'string' && ARRAY_REGEX.test(value)) {
       const inner = value.match(ARRAY_REGEX)
@@ -149,6 +160,7 @@ function fixSpaceStrings(val) {
     return val
       .replace(/__SPACE__/g, ' ')
       .replace(/__NEWLINE__/g, '\n')
+      //.replace(/^ /, '')
   }
   return val
 }
@@ -186,7 +198,10 @@ function parse(input) {
     .replace(/\s(?=(?:(?:[^']*(?:')){2})*[^']*(?:')[^']*$)/g, SPACES)
     // bob=`co ol` steve=`c ool` --> add temp spaces
     .replace(/\s(?=(?:(?:[^`]*(?:`)){2})*[^`]*(?:`)[^`]*$)/g, SPACES)
-
+    // onClick={() => console .log } and val={ name: John Doe }
+    // Inner spaces inside brackets https://regex101.com/r/1xxfMm/2
+    .replace(/ (?=(?:(?:[^\{]*(?:})){2})*[^{]*(?:\})[^]*$)/g, SPACES)
+    //.replace(/ +(?=(?:(?:[^{]*(?:{)){2})*[^}]*(?:})[^]*$)/g, SPACES)
     // .replace(/ /g, SPACES)
     // matchspaces inside quotes https://regex101.com/r/DqJ4TD/1
     // .replace(/\s+(?=(?:(?:[^"']*(?:"|')){2})*[^"']*(?:"|')[^"']*$)/g, SPACES)
@@ -360,6 +375,7 @@ function parse(input) {
     [RESERVED]: '',
   })
 
+  // console.log('values[RESERVED]', values[RESERVED])
   /* If leftover values, parse leftovers */
   // console.log('values[RESERVED]', `"${values[RESERVED]}"`)
   const leftOver = (values[RESERVED] && values[RESERVED].match(STARTS_WITH_VALID_CHAR)) ? parse(values[RESERVED]) : false
@@ -408,6 +424,7 @@ function getKeyAndValueFromString(string, callLocation) {
   // }
   // console.log('getKeyAndValueFromString')
   const [key] = string.split('=')
+  // const key = keyRaw.trim().replace(/,/, '')
   /* If no key or key starts with --- */
   if (!key || key.charAt(0) === '-' || hasEmoji(key)) {
     // console.log('string', string)
@@ -480,7 +497,7 @@ function getKeyAndValueFromString(string, callLocation) {
   console.log('hasSurroundingQuotes', hasSurroundingQuotes)
   /** */
 
-  // console.log('yvalue', value)
+  // console.log('value before return', value)
   return {
     key,
     value: hasSurroundingQuotes ? value.replace(SURROUNDING_QUOTES, '') : convert(value),
