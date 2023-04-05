@@ -1434,6 +1434,17 @@ test('Odd object with missing quotes', () => {
   //     bill: ["one", "two", true ]
   //   }
   // })
+
+  /* Ensure strings still work */
+  const a = parse('val="{ name: John Doe }"')
+  assert.equal(a, {
+    'val': `{ name: John Doe }`
+  }, 'a')
+
+  const b = parse("val='{ name: John Doe }'")
+  assert.equal(b, {
+    'val': `{ name: John Doe }`
+  }, 'b')
 })
 
 test.run()
