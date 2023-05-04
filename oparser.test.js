@@ -1,6 +1,6 @@
 const { test } = require('uvu') 
 const assert = require('uvu/assert')
-const { parse, stringify, options } = require('./')
+const { parse, parseValue, stringify, options } = require('./')
 
 test('Empty value', () => {
   assert.equal(parse(), {}, 'undefined val')
@@ -1445,6 +1445,89 @@ test('Odd object with missing quotes', () => {
   assert.equal(b, {
     'val': `{ name: John Doe }`
   }, 'b')
+})
+
+test('tricky strings - parseValue', () => {
+  const one = parseValue('{"key:true": ["1,2", 3, "\\"k\\":v"]}')
+  // console.log('one', one)
+  assert.equal(one, { "key:true": ["1,2", 3, '"k":v'] })
+})
+
+test('Multiline array string - parseValue', () => {
+  const multiLine =     
+  `
+{
+  "a": [1, 2, 3],
+  "b": [1, 2, 3]
+}
+  `.trim()
+  const one = parseValue(multiLine)
+  // console.log('one', one)
+  assert.equal(one, {
+    "a": [1, 2, 3],
+    "b": [1, 2, 3]
+  })
+
+  const multiLineTwo = 
+`
+{
+  "a": [
+    1,
+    2,
+    3
+  ],
+  "b": [1, 2, 3]
+}
+  `.trim()
+
+  const two = parseValue(multiLineTwo)
+  // console.log('two', two)
+  assert.equal(two, {
+    "a": [
+      1,
+      2,
+      3
+    ],
+    "b": [1, 2, 3]
+  })
+})
+
+test('Trailing commas arrays - parseValue', () => {
+  const multiLineTwo = 
+`
+{
+  "a": [
+    1,
+    2,
+    3,
+  ],
+  "b": [1, 2, 3],
+}
+`
+  const two = parseValue(multiLineTwo)
+  // console.log('two', two)
+  assert.equal(two, {
+    "a": [ 1, 2, 3],
+    "b": [1, 2, 3]
+  })
+})
+
+test('Trailing commas objects - parseValue', () => {
+  const multiLineTwo = 
+`
+[
+  {"cool": true, "nice": "1",},
+  {"cool": false, "nice": "2",,,,},
+  {"cool": null, "nice": "3",},
+]
+`
+  const two = parseValue(multiLineTwo)
+  // console.log('two', two)
+  assert.equal(two, [
+    { cool: true, nice: '1' },
+    { cool: false, nice: '2' },
+    { cool: null, nice: '3' }
+  ])
 })
 
 test.run()

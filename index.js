@@ -10,7 +10,8 @@ const STARTS_WITH_VALID_CHAR = /^[A-Za-z0-9_]/
 const ARRAY_REGEX = /^\[(.*)\]$/
 const OBJECT_REGEX = /^\{(.*)\}$/
 const TRAILING_COMMAS = /,+$/
-const TRAILING_ARRAY_COMMAS = /(?:,*[^\S]*)+?]$/
+// const TRAILING_ARRAY_COMMAS = /(?:,*[^\S]*)+?]$/
+const TRAILING_ARRAY_COMMAS = /(?:,+[^\S]*)+?]/
 // https://regex101.com/r/cy7mLe/1
 const TRAILING_OBJECT_COMMAS = /(?:,*[^\S]*)*?}$/
 
@@ -40,12 +41,15 @@ function convert(value) {
   }
 
   try {
-    /* Trim trailing commas in arrays */
     if (isArrayLike(value)) {
+      /* Trim trailing commas in arrays ,] */
       value = value.replace(TRAILING_ARRAY_COMMAS, ']')
     } else if (isObjectLike(value)) {
-      /* Trim trailing commas in object */
-      value = value.replace(TRAILING_OBJECT_COMMAS, ' }')
+      value = value
+        /* Trim trailing commas in object ,} */
+        .replace(TRAILING_OBJECT_COMMAS, ' }')
+        /* Trim trailing commas in arrays ,] */
+        .replace(TRAILING_ARRAY_COMMAS, ' ]')
     }
     const val = parseJSON(value) // last attempt to format an array like [ one, two ]
     return val
@@ -163,6 +167,18 @@ function fixSpaceStrings(val) {
       //.replace(/^ /, '')
   }
   return val
+}
+
+/**
+* Parse freeform value into object
+* @param {string} value - freeform string value to parse into object, array or value.
+* @returns {any}
+*/
+function parseValue(value) {
+  if (typeof value !== 'string' || !value) {
+    return value
+  }
+  return parse(`x=${value}`).x
 }
 
 /**
@@ -363,6 +379,7 @@ function parse(input) {
         const valueToCheck = (curr.match(isEnding) && !alreadyAdded) ? acc[RESERVED] + curr : acc[RESERVED]
         // console.log('valueToCheck', valueToCheck)
         const kv = getKeyAndValueFromString(valueToCheck, 'lastLoop')
+        // console.log('kv', kv)
         if (kv) {
           acc[kv.key] = kv.value
           acc[RESERVED] = ''
@@ -558,10 +575,12 @@ function format(val) {
   if (type === 'string') return ensureQuote(val)
   if (Array.isArray(val)) return val.map((v) => format(v))
   if (typeof val === 'object') {
-    return Object.entries(val).reduce((acc, [attr, v]) => {
-      acc[attr] = format(v)
-      return acc
-    }, {})
+    const obj = {}
+    const keys = Object.keys(val)
+    for (let i = 0; i < keys.length; i++) {
+      obj[keys[i]] = format(val[keys[i]])
+      return obj
+    }
   }
   return val
 }
@@ -610,6 +629,7 @@ function endChar(str, char) {
 
 module.exports = {
   parse,
+  parseValue,
   stringify,
   options,
 }
