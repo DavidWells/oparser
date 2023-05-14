@@ -1530,4 +1530,29 @@ test('Trailing commas objects - parseValue', () => {
   ])
 })
 
+test('Keys with underscore _', () => {
+  const keyTest = `foo_bar='baz'`
+  const two = parse(keyTest)
+  // console.log('two', two)
+  assert.equal(two, {foo_bar: 'baz'})
+})
+
+test('Keys with dash -', () => {
+  const keyTest = `foo-bar='baz'`
+  const two = parse(keyTest)
+  // console.log('two', two)
+  assert.equal(two, {
+    [`foo-bar`]: 'baz'
+  })
+})
+
+test('Keys with number', () => {
+  const keyTest = `1=baz`
+  const two = parse(keyTest)
+  // console.log('two', two)
+  assert.equal(two, {
+    [`1`]: 'baz'
+  })
+})
+
 test.run()

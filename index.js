@@ -234,6 +234,11 @@ function parse(input) {
     .join('\n')
     //.replace(/ /g, SPACES)
 
+    /* TODO allow for expanded valid keys 
+      a!"#$%&'()*+,-./09:;<=>?@AZ[\]^_`az{|}~
+      https://github.com/yaml/yaml-test-suite/blob/main/src/2EBW.yaml#L6
+    */
+
   var lines = cleanLines
     .replace(/__SPACE__([a-zA-Z]+)=/g, `${BREAK}$1=`)
     // Fix out of option new line replacements https://regex101.com/r/ttlXyt/1
@@ -251,7 +256,7 @@ function parse(input) {
   /** */
   var isEnding = /(['"}\]]|true,?|false,?)$/
   // var isEnding = /(['"}\]]|true,?|false,?|[A-Za-z0-9"']+,?)$/ // false positive on arrays
-  var isKeyValNoQuotes = /^[A-Za-z]+=[A-Za-z0-9!*_\-\/\\]/
+  var isKeyValNoQuotes = /^[a-zA-Z]+=[A-Za-z0-9!*_\-\/\\]/
   //var isKeyValNoQuotes = /^[A-Za-z]+=\S+/
 
   // @TODO Get real json matcher 
