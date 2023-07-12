@@ -1531,27 +1531,74 @@ test('Trailing commas objects - parseValue', () => {
 })
 
 test('Keys with underscore _', () => {
-  const keyTest = `foo_bar='baz'`
-  const two = parse(keyTest)
+  const one = parse(`foo_bar='baz'`)
   // console.log('two', two)
-  assert.equal(two, {foo_bar: 'baz'})
+  assert.equal(one, {foo_bar: 'baz'})
+
+  const two = parse(`
+  foo_bar=baz
+  wow_cool=rad
+  `)
+  // console.log('two', two)
+  assert.equal(two, {
+    [`foo_bar`]: 'baz',
+    [`wow_cool`]: 'rad'
+  })
 })
 
 test('Keys with dash -', () => {
   const keyTest = `foo-bar='baz'`
-  const two = parse(keyTest)
+  const one = parse(keyTest)
+  // console.log('two', two)
+  assert.equal(one, {
+    [`foo-bar`]: 'baz'
+  })
+
+  const two = parse(`
+  foo-bar=baz
+  wow-cool=rad
+  `)
   // console.log('two', two)
   assert.equal(two, {
-    [`foo-bar`]: 'baz'
+    [`foo-bar`]: 'baz',
+    [`wow-cool`]: 'rad'
+  })
+})
+
+test('Keys with dot .', () => {
+  const one = parse(`foo.bar='baz'`)
+  // console.log('two', two)
+  assert.equal(one, {
+    [`foo.bar`]: 'baz'
+  })
+
+  const two = parse(`
+  foo.bar=baz
+  wow.cool=rad
+  `)
+  // console.log('two', two)
+  assert.equal(two, {
+    [`foo.bar`]: 'baz',
+    [`wow.cool`]: 'rad'
   })
 })
 
 test('Keys with number', () => {
   const keyTest = `1=baz`
-  const two = parse(keyTest)
+  const one = parse(keyTest)
+  // console.log('two', two)
+  assert.equal(one, {
+    [`1`]: 'baz'
+  })
+
+  const two = parse(`
+  foo1=baz
+  2=rad
+  `)
   // console.log('two', two)
   assert.equal(two, {
-    [`1`]: 'baz'
+    [`foo1`]: 'baz',
+    [`2`]: 'rad'
   })
 })
 

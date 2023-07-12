@@ -256,10 +256,10 @@ function parse(input) {
   /** */
   var isEnding = /(['"}\]]|true,?|false,?)$/
   // var isEnding = /(['"}\]]|true,?|false,?|[A-Za-z0-9"']+,?)$/ // false positive on arrays
-  var isKeyValNoQuotes = /^[a-zA-Z]+=[A-Za-z0-9!*_\-\/\\]/
+  var isKeyValNoQuotes = /^[a-zA-Z\d\._-]+=[A-Za-z0-9!*_\-\/\\]/
   //var isKeyValNoQuotes = /^[A-Za-z]+=\S+/
 
-  // @TODO Get real json matcher 
+  // @TODO Get real json matcher
   var isJsonLike = /[{[]/
 
   const values = lines.reduce((acc, curr, i) => {
@@ -303,7 +303,7 @@ function parse(input) {
     }
     */
 
-    if (!acc[RESERVED].match(/^[A-Za-z]+={+/) && isValuePair(curr) && curr.match(isEnding)) {
+    if (!acc[RESERVED].match(/^[A-Za-z\._-]+={+/) && isValuePair(curr) && curr.match(isEnding)) {
       const kv = getKeyAndValueFromString(curr, 'one')
       // console.log('kv', kv)
       if (kv) {
@@ -349,7 +349,7 @@ function parse(input) {
     
     if (
       acc[RESERVED].match(isEnding)
-      && nextItem.match(/^[A-Za-z0-9_-]/)
+      && nextItem.match(/^[A-Za-z0-9\._-]/)
       && isBalanced(acc[RESERVED]) // If value is balanced brackets {[()]}
     ) {
       const kv = getKeyAndValueFromString(acc[RESERVED], 'xxxx')
