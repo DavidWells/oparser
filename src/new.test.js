@@ -1262,7 +1262,7 @@ const parsedValue = parse(`width={999} height={{111}} numberAsString="12345" g
 })
 
 
-test.skip('Trailing commas objects - parseValue', () => {
+test('Trailing commas objects - parseValue', () => {
   const multiLineTwo = 
 `
 [
@@ -1280,7 +1280,7 @@ test.skip('Trailing commas objects - parseValue', () => {
   ])
 })
 
-test.skip('Trailing commas wierd objects - parseValue', () => {
+test('Trailing commas wierd objects - parseValue', () => {
   const multiLineTwo = 
 `
 [

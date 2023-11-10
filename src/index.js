@@ -216,7 +216,7 @@ function parse(s) {
     const char = str[i]
     const nextChar = str[i + 1] || ''
     const prevChar = str[i - 1]
-    /*
+    //*
     console.log('───────────────────────────────')
     console.log(`> key "${bufferKey}"`, `char: "${char}"`)
     console.log(`> val "${bufferValue}"`, `char: "${char}"`)
@@ -416,7 +416,7 @@ function parseValue(value) {
   if (typeof value !== 'string' || !value) {
     return value
   }
-  return parse(`internal=${value}`).internal
+  return parse(`internal=${value.trim()}`).internal
 }
 
 function preFormat(val) {
