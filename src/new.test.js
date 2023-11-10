@@ -172,7 +172,7 @@ test('Escape conflicting quote chars', () => {
 })
 
 
-test('Escape conflicting quote chars', () => {
+test('Escape conflicting double quote chars', () => {
   const six = parse(`title="Wow \"this\" is great"`)
   assert.equal(six, {
     title: 'Wow "this" is great',
@@ -1115,6 +1115,28 @@ const bigExample = `width={999} 
  src="https://user-images.github{user}content.com/532272/123136878-46f1a300-d408-11eb-82f2-ad452498457b.jpg"
  deep={{ rad: 'blue', what: { nice: 'cool', wow: { deep: true } } }}`
 
+
+test('Multi line', () => {
+  const parsedValue = parse(`
+  /* comment */
+   great={["scoot", "sco ot", 'scooo ttt']} 
+ nice={{ value: nice, cool: "true" }}
+ foo={{ rad: ["whatever", "man", "with spaces"], cool: { beans: 'here' } }}
+ # other comment
+ what='xnxnx'
+ isLoading  `)
+  console.log('parsedValue', parsedValue)
+  assert.equal(parsedValue, {
+    great: [ 'scoot', 'sco ot', 'scooo ttt' ],
+    nice: { value: 'nice', cool: 'true' },
+    foo: {
+      rad: [ 'whatever', 'man', 'with spaces' ],
+      cool: { beans: 'here' }
+    },
+    what: 'xnxnx',
+    isLoading: true
+  }, 'matches original')
+})
 
 test('Multi line', () => {
   const parsedValue = parse(bigExample)

@@ -9,11 +9,11 @@ const TRAILING_COMMAS = /,+$/
 const NOT_OBJECT_LIKE = /^{[^:,]*}/
 const INFERRED_QUOTE = 'INFERRED'
 const SPACES = '__SPACE__'
-const NEWLINE = '__NEWLINE__'
-const SINGLE_OUTER_QUOTE = '▪'
-const DOUBLE_OUTER_QUOTE = '▫'
 const SINGLE_QUOTE = '_S_Q_'
 const DOUBLE_QUOTE = '_D_Q_'
+
+const SINGLE_OUTER_QUOTE = '▪'
+const DOUBLE_OUTER_QUOTE = '▫'
 
 function replaceInnerCharPattern(char = '\\s', open, close, repeat = 0) {
   // og /\s(?=(?:(?:[^"]*(?:")){2})*[^"]*(?:")[^"]*$)/g
@@ -26,8 +26,6 @@ function removeTempQuotes(val, rep) {
     return val
       .replace(/_S_Q_/g, `'`)
       .replace(/_D_Q_/g, `"`)
-      .replace(/__NEWLINE__/g, '\n')
-      .replace(/▪/g, "'")
   }
   return val
 }
@@ -35,8 +33,7 @@ function removeTempQuotes(val, rep) {
 const space = ' '
 // bob='co ol' steve='c ool' --> add temp spaces
 const SINGLE_QUOTES = replaceInnerCharPattern(space, "'", "'", 2)
-
-const SINGLE_QUOTES_NEW_LINE = replaceInnerCharPattern(`([^=])'\\n`, "'", "'", 2)
+const NEWLINES = replaceInnerCharPattern('\\n', "'", "'", 2)
 // bob="co ol" steve="c ool" --> add temp spaces
 const DOUBLE_QUOTES = replaceInnerCharPattern(space, '"', '"', 2)
 // bob=`co ol` steve=`c ool` --> add temp spaces
@@ -47,65 +44,61 @@ const BRACKETS = replaceInnerCharPattern(space, '{', '}', 2)
 const TAGS = replaceInnerCharPattern(space, '{<', '>}')
 
 console.log('SINGLE_QUOTES', SINGLE_QUOTES)
-console.log('SINGLE_QUOTES_NEW_LINE', SINGLE_QUOTES_NEW_LINE)
 console.log('DOUBLE_QUOTES', DOUBLE_QUOTES)
-console.log(replaceInnerCharPattern('\\n', "'", "'", 2))
-
-const SINGLE = replaceInnerCharPattern("'", SINGLE_OUTER_QUOTE, SINGLE_OUTER_QUOTE, 2)
-const DOUBLE = replaceInnerCharPattern('"', DOUBLE_OUTER_QUOTE, DOUBLE_OUTER_QUOTE, 2)
-
+console.log(replaceInnerCharPattern('space', "'", "'", 2))
+console.log('NEWLINES', NEWLINES)
 function parse(s) {
   if (typeof s === 'undefined' || s === null || s === '') {
     return {}
   }
 
   /* Trim string and remove comment blocks */
-  let str = removeComments(s.trim())
-    
+  let str = removeComments(s.trim()) 
   console.log('str', str)
   /* Fix conflicting single quotes bob='inner 'quote' conflict' steve='cool' */
   const hasInnerSpacesInSingles = SINGLE_QUOTES.test(str)
   console.log('hasInnerSpacesInSingles', s.match(SINGLE_QUOTES))
-
   if (hasInnerSpacesInSingles) {
     str = str
-      // .replace(SINGLE_QUOTES_NEW_LINE, `$1${SINGLE_QUOTE}${NEWLINE}`)
-      .replace(/='(.*)'/g, `=${SINGLE_OUTER_QUOTE}$1${SINGLE_OUTER_QUOTE}`)
-      .replace(/='(\s)/g, `=${SINGLE_OUTER_QUOTE}$1`)
-      .replace(/^(\s*)'(\s*)/gm, `$1${SINGLE_OUTER_QUOTE}$2`)
-      .replace(SINGLE, SINGLE_QUOTE)
-      // .replace(replaceInnerCharPattern(SINGLE_OUTER_QUOTE, "'", "'", 2), 'XXXXX')
-      // .replace(SINGLE_QUOTES, SPACES)
-      // .replace(/^((__SPACE__)*)*'(\s*)/gm, `$2${SINGLE_OUTER_QUOTE}$3`)
-      // .replace(/^(\s*)_S_Q_(\s*)/gm, `$1${SINGLE_OUTER_QUOTE}$2`)
-      // .replace(/__SPACE__'/g, ` ${SINGLE_QUOTE}`)
-      // .replace(/'__SPACE__/g, `${SINGLE_QUOTE} `)
-      // .replace(/__NEWLINE__'/g, `\n${SINGLE_QUOTE}`)
-      // .replace(/'__NEWLINE__/g, `${SINGLE_QUOTE}\n`)
-      //.replace(/'__NEWLINE__/g, `${SINGLE_QUOTE}__NEWLINE__`)
-      // .replace(/=_S_Q_/g, `='`)
-      // .replace(/ _S_Q_/g, ` '`)
-
-      // .replace(/=_S_Q___NEWLINE__/g, "='\n")
-      // .replace(/ _S_Q___NEWLINE__ /g, ` '\n `)
-      // 
-      // .replace(/_S_Q___NEWLINE____SPACE__/g, "'\n ")
+      /* Replace spaces in single quotes with temporary spaces */
+      // .replace(NEWLINES, 'FOO\n')
+      .replace(SINGLE_QUOTES, SPACES)
       
+      /* Fix opening quote */
+      // .replace(/^((?:\s*)|(?:__SPACE__)+)(\s*)'(\s*)/gm, `$1$2${SINGLE_OUTER_QUOTE}$3`)
+      /* Fix inner single quotes */
+      .replace(/__SPACE__'/g, ` ${SINGLE_QUOTE}`)
+
+
+      /* Fix inner single quotes */
+      .replace(/'__SPACE__/g, `${SINGLE_QUOTE} `)
+      
+      // not needed
+      // // /* Replace empty lines with closing quote */
+      // .replace(/^(\s*)'(\s*)$/gm, `$1${SINGLE_OUTER_QUOTE}$2`)
+      // // /* Replace =' newline with special char */
+      // .replace(/[=]'(\s*)$/, `=${SINGLE_OUTER_QUOTE}$1`)
+      
+      
+      // needed
+      // // /* Remove trailing quote for special char */
+      .replace(/([^=\]\}])'$/gm, `$1${SINGLE_QUOTE}`)
+      // /* Fix  trailing close quote */
+      .replace(/(\s*)((__SPACE__)+)+(\s*)_S_Q_(\s*)/g, `$1$2$4'$5`)
+      // // fix what='xnxnx_S_Q_
+      .replace(/='(.*)_S_Q_$/gm, "='$1'")
   }
-  console.log('one', str)
+
+  console.log('xone', str)
 
   /* Fix conflicting double quotes bob="inner "quote" conflict" steve='cool' */
   const hasInnerSpacesInDoubles = DOUBLE_QUOTES.test(str)
   console.log('hasInnerSpacesInDoubles', s.match(DOUBLE_QUOTES))
   if (hasInnerSpacesInDoubles) {
     str = str
-      .replace(/='(.*)'/g, `=${DOUBLE_OUTER_QUOTE}$1${DOUBLE_OUTER_QUOTE}`)
-      .replace(/='(\s)/g, `=${DOUBLE_OUTER_QUOTE}$1`)
-      .replace(/^(\s*)'(\s*)/gm, `$1${DOUBLE_OUTER_QUOTE}$2`)
-      .replace(DOUBLE, DOUBLE_QUOTE)
-      // .replace(/"__NEWLINE__/g, `${DOUBLE_QUOTE}__NEWLINE__`)
-      // .replace(/=_D_Q___NEWLINE__/g, '="\n')
-      // .replace(/ _D_Q___NEWLINE__ /g, ` "\n `)
+      .replace(DOUBLE_QUOTES, SPACES)
+      .replace(/__SPACE__"/g, ` ${DOUBLE_QUOTE}`)
+      .replace(/"__SPACE__/g, `${DOUBLE_QUOTE} `)
   }
   
   /* Fix conflicting double quotes bob="inner "quote" conflict" steve='cool' */
@@ -119,11 +112,12 @@ function parse(s) {
   // }
 
   if (hasInnerSpacesInSingles || hasInnerSpacesInDoubles) {
-    /* Replace temporary spaces */
     str = str
+      /* Replace temporary spaces */
       .replace(/__SPACE__/g, ' ')
-      .replace(/__NEWLINE__/g, '\n')
+      /* Replace single wrapper */
       .replace(/▪/g, "'")
+      /* Replace double wrapper */
       .replace(/▫/g, '"')
   }
 
