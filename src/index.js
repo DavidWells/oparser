@@ -9,6 +9,7 @@ const TRAILING_COMMAS = /,+$/
 const NOT_OBJECT_LIKE = /^{[^:,]*}/
 const INFERRED_QUOTE = 'INFERRED'
 const SPACES = '__SPACE__'
+const LINE_BREAK = '__LINEBREAK__'
 const SINGLE_QUOTE = '_S_Q_'
 const DOUBLE_QUOTE = '_D_Q_'
 
@@ -30,10 +31,12 @@ function removeTempQuotes(val, rep) {
   return val
 }
 
+
+
 const space = ' '
 // bob='co ol' steve='c ool' --> add temp spaces
 const SINGLE_QUOTES = replaceInnerCharPattern(space, "'", "'", 2)
-const NEWLINES = replaceInnerCharPattern('\\n', "'", "'", 2)
+
 // bob="co ol" steve="c ool" --> add temp spaces
 const DOUBLE_QUOTES = replaceInnerCharPattern(space, '"', '"', 2)
 // bob=`co ol` steve=`c ool` --> add temp spaces
@@ -45,8 +48,49 @@ const TAGS = replaceInnerCharPattern(space, '{<', '>}')
 
 console.log('SINGLE_QUOTES', SINGLE_QUOTES)
 console.log('DOUBLE_QUOTES', DOUBLE_QUOTES)
-console.log(replaceInnerCharPattern('space', "'", "'", 2))
-console.log('NEWLINES', NEWLINES)
+const LINEBREAKS_IN_SINGLE_QUOTE = replaceInnerCharPattern('\\n', "'", "'", 2)
+const LINEBREAKS_IN_DOUBLE_QUOTE = replaceInnerCharPattern('\\n', '"', '"', 2)
+console.log('LINEBREAKS_IN_SINGLE_QUOTE', LINEBREAKS_IN_SINGLE_QUOTE)
+
+function findRawLinks(text, pattern) {
+  let matches
+  let firstChar 
+  let last 
+  let i = 0
+  console.log('Check pattern', pattern)
+  while ((matches = pattern.exec(text)) !== null) {
+    if (matches.index === pattern.lastIndex) {
+      pattern.lastIndex++ // avoid infinite loops with zero-width matches
+    }
+    if (!i) {
+      firstChar = text[matches.index - 1] + text[matches.index]
+    }
+    console.log(getTextBetweenChars(text, matches.index - 1, matches.index))
+    console.log(matches)
+    i++
+    last = matches
+  }
+  if (last) {
+    console.log('last', last)
+    console.log('last', text[last.index] + text[last.index + 1])
+  }
+  return firstChar
+}
+
+function replacer(match, offset, string) {
+  console.log('offset', offset)
+  return (offset === 0 ? "FIRSRT" : "") + match
+}
+
+function styleHyphenFormat(propertyName) {
+
+  return propertyName.replace(/[A-Z]/g, upperToHyphenLower);
+}
+
+function getTextBetweenChars(text, start, end) {
+  return text.slice(start, end)
+}
+
 function parse(s) {
   if (typeof s === 'undefined' || s === null || s === '') {
     return {}
@@ -56,70 +100,96 @@ function parse(s) {
   let str = removeComments(s.trim()) 
   console.log('str', str)
   /* Fix conflicting single quotes bob='inner 'quote' conflict' steve='cool' */
-  const hasInnerSpacesInSingles = SINGLE_QUOTES.test(str)
-  console.log('hasInnerSpacesInSingles', s.match(SINGLE_QUOTES))
-  if (hasInnerSpacesInSingles) {
+
+  /* is multiline config */
+  if (str.indexOf('\n') > -1) {
     str = str
       /* Replace spaces in single quotes with temporary spaces */
-      // .replace(NEWLINES, 'FOO\n')
-      .replace(SINGLE_QUOTES, SPACES)
-      
-      /* Fix opening quote */
-      // .replace(/^((?:\s*)|(?:__SPACE__)+)(\s*)'(\s*)/gm, `$1$2${SINGLE_OUTER_QUOTE}$3`)
-      /* Fix inner single quotes */
-      .replace(/__SPACE__'/g, ` ${SINGLE_QUOTE}`)
-
-
-      /* Fix inner single quotes */
-      .replace(/'__SPACE__/g, `${SINGLE_QUOTE} `)
-      
-      // not needed
-      // // /* Replace empty lines with closing quote */
-      // .replace(/^(\s*)'(\s*)$/gm, `$1${SINGLE_OUTER_QUOTE}$2`)
-      // // /* Replace =' newline with special char */
-      // .replace(/[=]'(\s*)$/, `=${SINGLE_OUTER_QUOTE}$1`)
-      
-      
-      // needed
-      // // /* Remove trailing quote for special char */
-      .replace(/([^=\]\}])'$/gm, `$1${SINGLE_QUOTE}`)
-      // /* Fix  trailing close quote */
-      .replace(/(\s*)((__SPACE__)+)+(\s*)_S_Q_(\s*)/g, `$1$2$4'$5`)
-      // // fix what='xnxnx_S_Q_
-      .replace(/='(.*)_S_Q_$/gm, "='$1'")
-  }
-
-  console.log('xone', str)
-
-  /* Fix conflicting double quotes bob="inner "quote" conflict" steve='cool' */
-  const hasInnerSpacesInDoubles = DOUBLE_QUOTES.test(str)
-  console.log('hasInnerSpacesInDoubles', s.match(DOUBLE_QUOTES))
-  if (hasInnerSpacesInDoubles) {
-    str = str
-      .replace(DOUBLE_QUOTES, SPACES)
-      .replace(/__SPACE__"/g, ` ${DOUBLE_QUOTE}`)
-      .replace(/"__SPACE__/g, `${DOUBLE_QUOTE} `)
+      .replace(LINEBREAKS_IN_SINGLE_QUOTE, `${LINE_BREAK}\n`)
+      /* Replace spaces in double quotes with temporary spaces */
+      .replace(LINEBREAKS_IN_DOUBLE_QUOTE, `${LINE_BREAK}\n`)
   }
   
-  /* Fix conflicting double quotes bob="inner "quote" conflict" steve='cool' */
-  const hasInnerSpacesInBrackets = BRACKETS.test(str)
-  // console.log('hasInnerSpacesInDoubles', s.match(DOUBLE_QUOTES))
-  // if (hasInnerSpacesInDoubles) {
-  //   str = str
-  //     .replace(DOUBLE_QUOTES, SPACES)
-  //     .replace(/__SPACE__"/g, ` ${DOUBLE_QUOTE}`)
-  //     .replace(/"__SPACE__/g, `${DOUBLE_QUOTE} `)
-  // }
+  if (true || str.indexOf('\n') > -1) {
+      const hasInnerSpacesInSinglesQuote = SINGLE_QUOTES.test(str)
+      const hasMultiLineSingleQuoteValue = LINEBREAKS_IN_SINGLE_QUOTE.test(str)
+      console.log('hasInnerSpacesInSinglesQuote', s.match(SINGLE_QUOTES))
 
-  if (hasInnerSpacesInSingles || hasInnerSpacesInDoubles) {
-    str = str
-      /* Replace temporary spaces */
-      .replace(/__SPACE__/g, ' ')
-      /* Replace single wrapper */
-      .replace(/▪/g, "'")
-      /* Replace double wrapper */
-      .replace(/▫/g, '"')
+      if (hasInnerSpacesInSinglesQuote) {
+        // const answer = findRawLinks(str, LINEBREAKS_IN_SINGLE_QUOTE)
+        // const x = str.replace(LINEBREAKS_IN_SINGLE_QUOTE, replacer)
+        // console.log('x', x)
+        // console.log('answer', answer)
+
+        str = str
+          /* Replace spaces in single quotes with temporary spaces */
+          // .replace(LINEBREAKS_IN_SINGLE_QUOTE, `${LINE_BREAK}\n`)
+          .replace(SINGLE_QUOTES, SPACES)
+          
+          /* Fix inner single quotes */
+          .replace(/__SPACE__'/g, ` ${SINGLE_QUOTE}`)
+
+          /* Fix inner single quotes */
+          .replace(/'__SPACE__/g, `${SINGLE_QUOTE} `)
+          
+          // not needed
+          // // /* Replace empty lines with closing quote */
+          // .replace(/^(\s*)'(\s*)$/gm, `$1${SINGLE_OUTER_QUOTE}$2`)
+          // // /* Replace =' newline with special char */
+          // .replace(/[=]'(\s*)$/, `=${SINGLE_OUTER_QUOTE}$1`)
+
+          // needed
+          // // /* Remove trailing quote for special char */
+          .replace(/([^=\]\}])'__LINEBREAK__$/gm, `$1${SINGLE_QUOTE}`)
+          // /* Fix  trailing close quote */
+          .replace(/(\s*)((__SPACE__)+)+(\s*)_S_Q_(\s*)/g, `$1$2$4'$5`)
+          // // fix what='xnxnx_S_Q_
+          .replace(/='(.*)_S_Q_$/gm, "='$1'")
+      }
+
+      console.log('single pass', str)
+
+      /* Fix conflicting double quotes bob="inner "quote" conflict" steve='cool' */
+      const hasInnerSpacesInDoubleQuote = DOUBLE_QUOTES.test(str)
+      console.log('hasInnerSpacesInDoubleQuote', s.match(LINEBREAKS_IN_DOUBLE_QUOTE))
+      if (hasInnerSpacesInDoubleQuote) {
+        str = str
+          .replace(DOUBLE_QUOTES, SPACES)
+          .replace(/__SPACE__"/g, ` ${DOUBLE_QUOTE}`)
+          .replace(/"__SPACE__/g, `${DOUBLE_QUOTE} `)
+          // needed
+          .replace(/([^=\]\}])"__LINEBREAK__$/gm, `$1${DOUBLE_QUOTE}`)
+          // /* Fix  trailing close quote */
+          .replace(/(\s*)((__SPACE__)+)+(\s*)_D_Q_(\s*)/g, `$1$2$4"$5`)
+          // // fix what='xnxnx_S_Q_
+          .replace(/="(.*)_D_Q_$/gm, '="$1"')
+      }
+
+      console.log('double pass', str)
+      
+      /* Fix conflicting double quotes bob="inner "quote" conflict" steve='cool' */
+      const hasInnerSpacesInBrackets = BRACKETS.test(str)
+      // console.log('hasInnerSpacesInDoubleQuote', s.match(DOUBLE_QUOTES))
+      // if (hasInnerSpacesInDoubleQuote) {
+      //   str = str
+      //     .replace(DOUBLE_QUOTES, SPACES)
+      //     .replace(/__SPACE__"/g, ` ${DOUBLE_QUOTE}`)
+      //     .replace(/"__SPACE__/g, `${DOUBLE_QUOTE} `)
+      // }
+
+      if (hasInnerSpacesInSinglesQuote || hasInnerSpacesInDoubleQuote) {
+        str = str
+          /* Replace temporary spaces */
+          .replace(/__SPACE__/g, ' ')
+          /* Replace temporary line breaks */
+          .replace(/__LINEBREAK__/g, '')
+          /* Replace single wrapper */
+          .replace(/▪/g, "'")
+          /* Replace double wrapper */
+          .replace(/▫/g, '"')
+      }
   }
+
 
   console.log('process str', str)
   const vals = {}

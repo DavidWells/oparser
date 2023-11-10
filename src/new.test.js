@@ -688,6 +688,39 @@ test('Handles multiline values single quotes (indentation matters)', () => {
   })
 })
 
+test('Handles multiline values mixed quotes (indentation matters)', () => {
+  const one = parse(`
+  baz="yolo"
+  what='
+    import {foo} from 'lodash'
+    import {bar} from "lodash"
+    import {zaz} from 'lodash'
+  '
+  chill="
+    import {foo} from 'lodash'
+    import {bar} from "lodash"
+    import {zaz} from 'lodash'
+  "
+  
+  bar=true
+  `)
+  console.log('one', one)
+  assert.equal(one, {
+    baz: 'yolo',
+    what: `
+    import {foo} from 'lodash'
+    import {bar} from "lodash"
+    import {zaz} from 'lodash'
+  `,
+   chill: `
+    import {foo} from 'lodash'
+    import {bar} from "lodash"
+    import {zaz} from 'lodash'
+  `,
+   bar: true
+  })
+})
+
 test('Handles multiline values {`reactStyle`}', () => {
   const one = parse(`
   baz="yolo"
