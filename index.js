@@ -3,6 +3,7 @@ const { parseJSON } = require('json-alexander')
 // alt approach maybe https://github.com/etienne-dldc/literal-parser
 const RESERVED = '__private'
 const SPACES = '__SPACE__'
+const SPACES_TWO = '__TWOSPACES__'
 const NEWLINE = '__NEWLINE__'
 const BREAK = '__OPT_BREAK__'
 const SURROUNDING_QUOTES = /^("|'|`)|("|'|`)$/g
@@ -59,6 +60,7 @@ function convert(value) {
 
     /* Convert object looking string into values */
     if (isObjectLike(value) && value.indexOf(':') > -1) {
+      console.log('value', value)
       const inner = value.replace(/^{|}$/g, '')
       const kvs = inner.split(',')
       // console.log('inner', inner)
@@ -75,7 +77,7 @@ function convert(value) {
         return acc
       }, '')
       const objToTry =`{ ${newObjectString.replace(/,$/, '')} }`
-      // console.log('objToTry', objToTry)
+      console.log('objToTry', objToTry)
       return parseJSON(objToTry)
     }
     /* Convert array looking string into values */
@@ -163,6 +165,7 @@ function fixSpaceStrings(val) {
   if (typeof val === 'string') {
     return val
       .replace(/__SPACE__/g, ' ')
+      .replace(/__TWOSPACES__/g, ' ')
       .replace(/__NEWLINE__/g, '\n')
       //.replace(/^ /, '')
   }
@@ -181,6 +184,26 @@ function parseValue(value) {
   return parse(`x=${value}`).x
 }
 
+function replaceInnerCharPattern(char = '\\s', open, close, repeat = 0) {
+  // og /\s(?=(?:(?:[^"]*(?:")){2})*[^"]*(?:")[^"]*$)/g
+  const repeatVal = (repeat) ? `{${repeat}}` : ''
+  return new RegExp(`${char}(?=(?:(?:[^${open}]*(?:${open}))${repeatVal})*[^${close}]*(?:${close})[^${close}]*$)`, 'g')
+}
+
+const space = '\\s'
+// bob='co ol' steve='c ool' --> add temp spaces
+const QUOTES = replaceInnerCharPattern(space, "'", "'", 2)
+// bob="co ol" steve="c ool" --> add temp spaces
+const DOUBLE_QUOTES = replaceInnerCharPattern(space, '"', '"', 2)
+// bob=`co ol` steve=`c ool` --> add temp spaces
+const TICKS = replaceInnerCharPattern(space, '`', '`', 2)
+// bob={co ol} steve={co ol} --> add temp spaces
+const BRACKETS = replaceInnerCharPattern(space, '{', '}', 2)
+// bob={co ol} steve={co ol} --> add temp spaces
+const TAGS = replaceInnerCharPattern(space, '{<', '>}')
+console.log('TAGS', TAGS)
+console.log('DOUBLE_QUOTES', DOUBLE_QUOTES)
+console.log('QUOTES', QUOTES)
 /**
  * Parse string of key value options
  * @param {string} input - string of options. Can be multiline
@@ -195,7 +218,7 @@ function parse(input) {
   var pattern = /(\S+)/g
 
   //var y = /("|{)[^"}]+("|})|([^\r\n\t\f\v\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+)/gm
-  
+
   const cleanLines = input
     //.replace(/\n/g, NEWLINE)
     // Remove JS comment blocks and single line comments https://regex101.com/r/XKHU18/2 | alt https://regex101.com/r/ywd8TT/1
@@ -209,11 +232,15 @@ function parse(input) {
     // https://regex101.com/r/16L0FZ/2 this works but probably dont need... TODO maybe remove
     .replace(/\{(\(.*\))(\s*)=>(\s*){?([^}]*)+[^}]?}/gm, `{$1${SPACES}=>${SPACES}$4}`)
     // bob="co ol" steve="c ool" --> add temp spaces
-    .replace(/\s(?=(?:(?:[^"]*(?:")){2})*[^"]*(?:")[^"]*$)/g, SPACES)
+    .replace(DOUBLE_QUOTES, SPACES)
     // bob='co ol' steve='c ool' --> add temp spaces
-    .replace(/\s(?=(?:(?:[^']*(?:')){2})*[^']*(?:')[^']*$)/g, SPACES)
+    .replace(QUOTES, SPACES)
     // bob=`co ol` steve=`c ool` --> add temp spaces
-    .replace(/\s(?=(?:(?:[^`]*(?:`)){2})*[^`]*(?:`)[^`]*$)/g, SPACES)
+    .replace(TICKS, SPACES)
+    // // bob={co ol} steve={co ol} --> add temp spaces
+    // .replace(BRACKETS, SPACES)
+    //  // bob={co ol} steve={co ol} --> add temp spaces
+    .replace(TAGS, SPACES_TWO)
     // onClick={() => console .log } and val={ name: John Doe }
     // Inner spaces inside brackets https://regex101.com/r/1xxfMm/2
     .replace(/ (?=(?:(?:[^\{]*(?:})){2})*[^{]*(?:\})[^]*$)/g, SPACES)
@@ -240,6 +267,7 @@ function parse(input) {
     */
 
   var lines = cleanLines
+    .replace(/<([a-zA-Z]+)__SPACE__/g, `<$1${SPACES_TWO}`)
     .replace(/__SPACE__([a-zA-Z]+)=/g, `${BREAK}$1=`)
     // Fix out of option new line replacements https://regex101.com/r/ttlXyt/1
     .replace(/__NEWLINE__(?:__SPACE__)*__OPT_BREAK__/g, BREAK)
@@ -250,7 +278,7 @@ function parse(input) {
       return item.split(BREAK)
     }).flat()
 
-  /*
+  //*
   console.log('cleanLines', cleanLines)
   console.log('lines', lines)
   /** */
@@ -305,7 +333,7 @@ function parse(input) {
 
     if (!acc[RESERVED].match(/^[A-Za-z\._-]+={+/) && isValuePair(curr) && curr.match(isEnding)) {
       const kv = getKeyAndValueFromString(curr, 'one')
-      // console.log('kv', kv)
+      console.log('kv', kv)
       if (kv) {
         // console.log(`ADDED`, kv)
         acc[kv.key] = kv.value
@@ -434,7 +462,7 @@ function hasEmoji(str) {
 }
 
 function getKeyAndValueFromString(string, callLocation) {
-  /*
+  //*
   console.log(`getKeyAndValueFromString from ${callLocation}`)
   console.log(`>>>> "${string}"`)
   /** */
