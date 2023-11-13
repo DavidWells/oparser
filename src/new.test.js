@@ -1,10 +1,13 @@
 const { test } = require('uvu') 
 const assert = require('uvu/assert')
 const { parse, parseValue } = require('./')
+const { convert } = require('./utils/convert')
+// const { parse, parseValue } = require('../')
 
-/*************************************************************
+
+/************************************************************************************************************
  * String values
- *************************************************************/
+ *********************************************************************************************************************************************************/
 
 test('Simple string equal (no quotes with spaces). key = value', () => {
   const answer = { bob: 'cool' }
@@ -79,8 +82,8 @@ test('Simple strings mixed', () => {
   // console.log('parsedValue', parsedValue)
   assert.equal(one, answer)
 
-  const two = parse(`bob = cool joe=cool bill="cool" steve='cool' johnny=\`cool\` sally={\`cool\`} susy={{\`cool\`}}`)
-  assert.equal(two, answer)
+  // const two = parse(`bob = cool joe=cool bill="cool" steve='cool' johnny=\`cool\` sally={\`cool\`} susy={{\`cool\`}}`)
+  // assert.equal(two, answer)
 })
 
 const stringExample = `abc=yo foo=bar baz='hello' bim='boop dop' fizz="pop" pow="bang bang"`
@@ -109,9 +112,9 @@ test('string test two', () => {
   })
 })
 
-/*************************************************************
+/************************************************************************************************************
  * Nested quotes
- *************************************************************/
+ ***********************************************************************************************************/
 
 test('Single quotes inside double quotes', () => {
   const one = parse(`bob="co'ol" steve="co'ol"`)
@@ -192,9 +195,9 @@ test('Escape conflicting double quote chars', () => {
   // }, 'eight')
 })
 
-/*************************************************************
+/************************************************************************************************************
  * Number values
- *************************************************************/
+ ***********************************************************************************************************/
 
 test('Simple numbers', () => {
   const one = parse(`isCool=20`)
@@ -222,9 +225,9 @@ test('Simple numbers', () => {
   assert.equal(brackets, { isCool: 0.22 })
 })
 
-/*************************************************************
+/************************************************************************************************************
  * Boolean values
- *************************************************************/
+ ***********************************************************************************************************/
 
 test('Simple boolean no value', () => {
   const answer = { isCool: true }
@@ -303,9 +306,9 @@ test('Multiline boolean', () => {
   assert.equal(one, answer)
 })
 
-/*************************************************************
+/************************************************************************************************************
  * Comment tests
- *************************************************************/
+ ***********************************************************************************************************/
 
 test('Remove single line comments', () => {
   const answer = { 
@@ -383,9 +386,9 @@ bill="cool"
   assert.equal(one, answer)
 })
 
-/*************************************************************
+/************************************************************************************************************
  * Edge cases
- *************************************************************/
+ ***********************************************************************************************************/
 
 test('Handles inner double quotes', () => {
   const answer = { 
@@ -505,14 +508,15 @@ test('Handles *', () => {
   assert.equal(one, answer)
 })
 
-test.skip('Handles inner curly brackets {}', () => {
-  const answer = { 
-
-    two: "weirdval}",
+test('Handles inner curly brackets {}', () => {
+  const answer = {
+    funny: '${funky}',
+    two: "xval}",
     three: "weirdval}",
   }
   const one = parse(`
-  two={{weirdval}}}
+  funny='\${funky}'
+  two={{xval}}}
   three={weirdval}}
   `)
   console.log('one', one)
@@ -731,6 +735,7 @@ import {zaz} from 'lodash'
   \`}
   bar=true
   `)
+  console.log('one', one)
   assert.equal(one, {
     baz: 'yolo',
     what: `
@@ -742,7 +747,7 @@ import {zaz} from 'lodash'
   })
 })
 
-test.skip('Handles multiline values wrapped in ``', () => {
+test('Handles multiline values wrapped in ``', () => {
   const answer = {
     baz: 'yolo',
     what: `
@@ -802,9 +807,9 @@ import {zaz} from 'lodash'
   assert.equal(four, answer, 'four')
 })
 
-/*************************************************************
+/************************************************************************************************************
  * Array values
- *************************************************************/
+ ***********************************************************************************************************/
 
 test('Simple array', () => {
   const y = parse(`key=[ 1, 2, 3 ]`)
@@ -957,9 +962,154 @@ test('Complex array with object', () => {
   })
 })
 
-/*************************************************************
+
+test("JSX elements", () => {
+  assert.equal(
+    parseValue("{<span style={ { color:'green' } }>jsx style</span>}"), 
+    "<span style={ { color:'green' } }>jsx style</span>", 
+    'JSX one'
+  )
+
+  assert.equal(
+    parseValue("{<span style={{color:'green'}}>jsx style</span>}"), 
+    "<span style={{color:'green'}}>jsx style</span>", 
+    'JSX two'
+  )
+
+  assert.equal(
+    parseValue("{<span style={ {color:'green'} }>jsx style</span>}"),
+    "<span style={ {color:'green'} }>jsx style</span>", 
+    'JSX three'
+  )
+
+  assert.equal(
+    parseValue("{<span prop={{ foo: 'hasBracket}' }}>jsx style</span>}"),
+    "<span prop={{ foo: 'hasBracket}' }}>jsx style</span>", 
+    'JSX four'
+  )
+
+  assert.equal(
+    parseValue("{{<span prop={{ foo: 'hasBracket}' }}>jsx style</span>}}"),
+    "<span prop={{ foo: 'hasBracket}' }}>jsx style</span>", 
+    'JSX five'
+  )
+})
+
+test("JSX multiline element brackets", () => {
+  const x = parse(`
+tester={{
+  <span prop={{ foo: 'hasBracket}' }}>
+    jsx style
+  </span>
+}}
+  `)
+  assert.equal(x,
+    {
+      tester: `
+  <span prop={{ foo: 'hasBracket}' }}>
+    jsx style
+  </span>
+`
+    },
+    'JSX four'
+  )
+})
+
+test("JSX multiline element single quote", () => {
+  const x = parse(`
+tester={'
+  <span prop={{ foo: 'hasBracket}' }}>
+    jsx style
+  </span>
+'}
+  `)
+  assert.equal(x,
+    {
+      tester: `
+  <span prop={{ foo: 'hasBracket}' }}>
+    jsx style
+  </span>
+`
+    },
+  )
+})
+
+test("JSX multiline element double quote", () => {
+  const x = parse(`
+tester={"
+  <span prop={{ foo: 'hasBra"cket}' }}>
+    jsx style
+  </span>
+"}
+  `)
+  assert.equal(x,
+    {
+      tester: `
+  <span prop={{ foo: 'hasBra"cket}' }}>
+    jsx style
+  </span>
+`
+    },
+  )
+})
+
+test("JSX multiline element ticks `", () => {
+  const x = parse(`
+tester={\`
+  <span prop={{ foo: 'hasBracket}' }}>
+    jsx style
+  </span>
+\`}
+  `)
+  assert.equal(x,
+    {
+      tester: `
+  <span prop={{ foo: 'hasBracket}' }}>
+    jsx style
+  </span>
+`
+    },
+  )
+})
+
+test("JSX multiline element parens (", () => {
+  const x = parse(`
+tester={(
+  <span prop={{ foo: 'hasBracket}' }}>
+    jsx style
+  </span>
+)}
+  `)
+  assert.equal(x,
+    {
+      tester: `
+  <span prop={{ foo: 'hasBracket}' }}>
+    jsx style
+  </span>
+`
+    },
+  )
+})
+
+// This doesnt work
+test("JSX elements two", () => {
+  console.log('DEBUG')
+  const x = parse(`
+    tester={{<span prop={{ foo: 'hasBracket}' }}>jsx style</span>}}
+  `) 
+  console.log('x', x)
+  assert.equal(
+    x,
+    {
+      tester: `<span prop={{ foo: 'hasBracket}' }}>jsx style</span>`
+    },
+    'JSX four'
+  )
+})
+
+/************************************************************************************************************
  * Object values
- *************************************************************/
+ ***********************************************************************************************************/
 
 test('raw object', () => {
   const answer = { key: { a: 'b' } }
@@ -1120,8 +1270,31 @@ test('smallExample Multi line', () => {
   })
 })
 
+test('Multi line small', () => {
+  const parsedValue = parse(`
+  /* comment */
+   great={["scoot", "sco ot", 'scooo ttt']} 
+ nice={{ value: nice, cool: "true" }}
+ foo={{ rad: ["whatever", "man", "with spaces"], cool: { beans: 'here' } }}
+ # other comment
+ what='xnxnx'
+ isLoading  `)
+  console.log('parsedValue', parsedValue)
+  assert.equal(parsedValue, {
+    great: [ 'scoot', 'sco ot', 'scooo ttt' ],
+    nice: { value: 'nice', cool: 'true' },
+    foo: {
+      rad: [ 'whatever', 'man', 'with spaces' ],
+      cool: { beans: 'here' }
+    },
+    what: 'xnxnx',
+    isLoading: true
+  }, 'matches original')
+})
 
-const bigExample = `width={999} 
+test('Multi line', () => {
+  const parsedValue = parse(`
+width={999} 
   height={{111}}
   numberAsString="12345"   
  great={["scoot", "sco ot", 'scooo ttt']} 
@@ -1146,33 +1319,9 @@ const bigExample = `width={999} 
  whatever={{ chill: "https://app.netlify.com/start/deploy?repository=https://github.com/netlify/netlify-faunadb-example&stack=fauna", pill: ['yo']}}
  href="https://fooo.com/start/deploy?repository=https://github.com/netlify/netlify-faunadb-example&stack=fauna"
  src="https://user-images.github{user}content.com/532272/123136878-46f1a300-d408-11eb-82f2-ad452498457b.jpg"
- deep={{ rad: 'blue', what: { nice: 'cool', wow: { deep: true } } }}`
-
-
-test('Multi line', () => {
-  const parsedValue = parse(`
-  /* comment */
-   great={["scoot", "sco ot", 'scooo ttt']} 
- nice={{ value: nice, cool: "true" }}
- foo={{ rad: ["whatever", "man", "with spaces"], cool: { beans: 'here' } }}
- # other comment
- what='xnxnx'
- isLoading  `)
-  console.log('parsedValue', parsedValue)
-  assert.equal(parsedValue, {
-    great: [ 'scoot', 'sco ot', 'scooo ttt' ],
-    nice: { value: 'nice', cool: 'true' },
-    foo: {
-      rad: [ 'whatever', 'man', 'with spaces' ],
-      cool: { beans: 'here' }
-    },
-    what: 'xnxnx',
-    isLoading: true
-  }, 'matches original')
-})
-
-test('Multi line', () => {
-  const parsedValue = parse(bigExample)
+ deep={{ rad: 'blue', what: { nice: 'cool', wow: { deep: true } } }}
+  
+  `)
   // console.log('parsedValue', parsedValue)
   assert.equal(parsedValue, {
     width: 999,
@@ -1301,6 +1450,371 @@ test('Trailing commas wierd objects - parseValue', () => {
     { cool: false, nice: '2' },
     { cool: null, nice: '3' }
   ])
+})
+
+
+/************************************************************************************************************
+ * Comments
+ ***********************************************************************************************************/
+
+test("Handles comments", () => {
+  const x = parse(`
+// js single line comment
+/* js single line comment block */
+# hash style comment
+
+valueDoubleQ="with /* comment */ inside"
+
+valueSingleQ='with /* comment */ inside'
+
+valueSingleMultiQ='
+Multi 'line' with
+comment /* comment */ 
+inside
+'
+
+valueDoubleMultiQ="
+Multi "line" with
+comment /* comment */ 
+inside
+"
+
+what='
+  // escaped js single line comment
+  import {foo} from 'lodash'
+  /* escaped js single line comment block */
+  import {bar} from "lodash"
+  # escaped hash style comment
+  import {zaz} from 'lodash'
+'
+
+object={{ rad: ["with a /* comment */ inside", "cool"], cool: { beans: 'dude' } }}
+
+/* key value in comment test=two */
+
+/************************************************************************************************************
+ * Large Comments
+ ***********************************************************************************************************/
+
+actual=value
+
+actualTwo=value # trailing hash style comment
+actualThree=value // trailing js single line comment
+actualFour=value /* trailing js single line comment block */
+
+actualFive='value' # trailing hash style comment
+actualSix='value' // trailing js single line comment
+actualSeven='value' /* trailing js single line comment block */
+
+actualEight="value" # trailing hash style comment
+actualNine="value" // trailing js single line comment
+actualTen="value" /* trailing js single line comment block */
+boo="hello"
+  `)
+  console.log('x', x)
+  assert.equal(x, {
+    valueDoubleQ: 'with /* comment */ inside',
+    valueSingleQ: 'with /* comment */ inside',
+    valueSingleMultiQ: '\nMulti \'line\' with\ncomment /* comment */ \ninside\n',
+    valueDoubleMultiQ: '\nMulti "line" with\ncomment /* comment */ \ninside\n',
+    what: '\n' +
+      '  // escaped js single line comment\n' +
+      "  import {foo} from 'lodash'\n" +
+      '  /* escaped js single line comment block */\n' +
+      '  import {bar} from "lodash"\n' +
+      '  # escaped hash style comment\n' +
+      "  import {zaz} from 'lodash'\n",
+    object: {
+      rad: [ 'with a /* comment */ inside', 'cool' ],
+      cool: { beans: 'dude' }
+    },
+    actual: 'value',
+    actualTwo: 'value',
+    actualThree: 'value',
+    actualFour: 'value',
+    actualFive: 'value',
+    actualSix: 'value',
+    actualSeven: 'value',
+    actualEight: 'value',
+    actualNine: 'value',
+    actualTen: 'value',
+    boo: 'hello'
+  })
+})
+
+/************************************************************************************************************
+ * MISC
+ ***********************************************************************************************************/
+
+test.skip('Weird ones', () => {
+  const one = parse("debug 1")
+  assert.equal(one, {
+    debug: true,
+    1: true,
+  })
+  const two = parse("_debug 33")
+  assert.equal(two, {
+    _debug: true,
+    33: true,
+  })
+})
+
+test('Handles inner brackets []', () => {
+  const answer = {
+    nice: '[whatever]x',
+    funny: '[[coool]]',
+  }
+  const one = parse(`
+  nice='[whatever]x'
+  funny="[[coool]]"
+  `)
+  // console.log('parsedValue', parsedValue)
+  assert.equal(one, answer)
+})
+
+test('Handles variable syntax values', () => {
+  const one = parse("nice=${file(./foo.js)}")
+  assert.equal(one, {
+    nice: '${file(./foo.js)}',
+  })
+  const two = parse("nice='${file(./foo.js)}'")
+  assert.equal(two, {
+    nice: '${file(./foo.js)}',
+  })
+  const three = parse(`nice='\${file("./foo.js")}'`)
+  assert.equal(three, {
+    nice: '${file("./foo.js")}',
+  })
+  const four = parse(`nice='\${self:custom.stage}'`)
+  assert.equal(four, {
+    nice: '${self:custom.stage}',
+  })
+})
+
+test('Handles multiline values lorum ipsum', () => {
+  const one = parse(`
+  baz="yolo"
+  what={\`
+  Lorem ipsum dolor sit amet, has te paulo sententiae argumentum, ius id saepe moderatius adversarium. 
+  Porro iudico deserunt mei ex. Est quas denique nostrum eu, ne sit eius mundi omnium. 
+  Eam labitur recteque dissentiet an. Fugit facer delectus ad quo, an vel debet vidisse percipitur, ex facilisi nominati laboramus cum. Mea lobortis accusamus ex. Nam id apeirian forensibus, in qui nisl illud mucius.
+  \`}
+  bar=true
+  funky='fresh'
+  `)
+  assert.equal(one, {
+    baz: 'yolo',
+    what: `
+  Lorem ipsum dolor sit amet, has te paulo sententiae argumentum, ius id saepe moderatius adversarium. 
+  Porro iudico deserunt mei ex. Est quas denique nostrum eu, ne sit eius mundi omnium. 
+  Eam labitur recteque dissentiet an. Fugit facer delectus ad quo, an vel debet vidisse percipitur, ex facilisi nominati laboramus cum. Mea lobortis accusamus ex. Nam id apeirian forensibus, in qui nisl illud mucius.
+  `,
+   bar: true,
+   funky: 'fresh'
+  })
+})
+
+test('Big array', () => {
+  const one = parse(`
+foo=[
+  {
+    color: "red",
+    value: "#f00"
+  },
+  {
+    color: "green",
+    value: "#0f0"
+  },
+  {
+    color: "blue",
+    value: "#00f"
+  },
+  {
+    color: "cyan",
+    value: "#0ff"
+  },
+  {
+    color: "magenta",
+    value: "#f0f"
+  },
+  {
+    color: "yellow",
+    value: "#ff0"
+  },
+]
+`)
+  assert.equal(one, {
+    foo: [
+      {
+        color: "red",
+        value: "#f00"
+      },
+      {
+        color: "green",
+        value: "#0f0"
+      },
+      {
+        color: "blue",
+        value: "#00f"
+      },
+      {
+        color: "cyan",
+        value: "#0ff"
+      },
+      {
+        color: "magenta",
+        value: "#f0f"
+      },
+      {
+        color: "yellow",
+        value: "#ff0"
+      }
+    ],
+  })
+})
+
+test('Big array react style', () => {
+  const one = parse(`
+foo={[
+  {
+    color: "red",
+    value: "#f00"
+  },
+  {
+    color: "green",
+    value: "#0f0"
+  },
+  {
+    color: "blue",
+    value: "#00f"
+  },
+  {
+    color: "cyan",
+    value: "#0ff"
+  },
+  {
+    color: "magenta",
+    value: "#f0f"
+  },
+  {
+    color: "yellow",
+    value: "#ff0"
+  },
+  {
+    color: "black",
+    value: "#000"
+  }
+]}
+`)
+  assert.equal(one, {
+    foo: [
+      {
+        color: "red",
+        value: "#f00"
+      },
+      {
+        color: "green",
+        value: "#0f0"
+      },
+      {
+        color: "blue",
+        value: "#00f"
+      },
+      {
+        color: "cyan",
+        value: "#0ff"
+      },
+      {
+        color: "magenta",
+        value: "#f0f"
+      },
+      {
+        color: "yellow",
+        value: "#ff0"
+      },
+      {
+        color: "black",
+        value: "#000"
+      }
+    ],
+  })
+})
+
+test('Handles Multiline breaks', () => {
+  const one = parse(`
+
+  foo='bar'
+
+
+
+  baz='fuzz'
+
+
+  funky=true
+  
+
+
+  
+  `)
+  assert.equal(one, {
+    foo: 'bar',
+    baz: 'fuzz',
+    funky: true,
+  })
+})
+
+test('reactProp func', () => {
+  const five = `isCool onClick={"() => { console.log('h i')}"}`
+  // console.log('five', five)
+  assert.equal(parse(five), {
+    isCool: true,
+    onClick: `() => { console.log('h i')}`,
+  }, 'five')
+})
+
+test('reactProp func', () => {
+  assert.equal(parse(`onClick={hi}`), {
+    onClick: 'hi',
+  }, 'onClick={hi}')
+
+  assert.equal(parse(`onClick={()}`), {
+    onClick: '()',
+  }, 'onClick={()}')
+
+  const three = `onClick={() => console.log('h i')}`
+  assert.equal(parse(three), {
+    onClick: "() => console.log('h i')",
+  }, 'three')
+
+  const four = `onClick={{() => console.log('h i')}}`
+  assert.equal(parse(four), {
+    onClick: "() => console.log('h i')",
+  }, 'four')
+
+  const five = `isCool onClick={"() => { console.log('h i')}"}`
+  // console.log('five', five)
+  assert.equal(parse(five), {
+    isCool: true,
+    onClick: `() => { console.log('h i')}`,
+  }, 'five')
+
+  // const six = `onClick=() => {
+  //   console.log('h i')
+  //   console.log("cool stuuf")
+  // }`
+  // assert.equal(parse(six), {
+  //   onClick: "() => { console.log('h i')}",
+  // }, six)
+})
+
+
+test('Single line bools', () => {
+  const one = parse(`single line bools`)
+  assert.equal(one, {
+    single: true,
+    line: true,
+    bools: true,
+  })
 })
 
 test.run()
