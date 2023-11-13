@@ -225,6 +225,32 @@ test('Simple numbers', () => {
   assert.equal(brackets, { isCool: 0.22 })
 })
 
+test('Simple numbers single line w/ other values', () => {
+  const one = parse(`isCool=20 chill cool='hi'`)
+  assert.equal(one, { isCool: 20, chill: true, cool: 'hi' })
+
+  const two = parse(`isCool=20.2 chill cool='hi'`)
+  assert.equal(two, { isCool: 20.2, chill: true, cool: 'hi'  })
+
+  const three = parse(`isCool={20.2} chill cool='hi'`)
+  assert.equal(three, { isCool: 20.2, chill: true, cool: 'hi'  })
+
+  const four = parse(`isCool={{20.2}} chill cool='hi'`)
+  assert.equal(four, { isCool: 20.2, chill: true, cool: 'hi'  })
+
+  const five = parse(`isCool=0 chill cool='hi'`)
+  assert.equal(five, { isCool: 0, chill: true, cool: 'hi'  })
+
+  const sixAsString = parse(`isCool="0" chill cool='hi'`)
+  assert.equal(sixAsString, { isCool: "0", chill: true, cool: 'hi'  })
+
+  const decimal = parse(`isCool=0.22 chill cool='hi'`)
+  assert.equal(decimal, { isCool: 0.22, chill: true, cool: 'hi'  })
+
+  const brackets = parse(`isCool={0.22} chill cool='hi'`)
+  assert.equal(brackets, { isCool: 0.22, chill: true, cool: 'hi'  })
+})
+
 /************************************************************************************************************
  * Boolean values
  ***********************************************************************************************************/
@@ -282,16 +308,6 @@ test('Simple boolean', () => {
 })
 
 test('Multiline boolean', () => {
-  const answer = { 
-    bob: 'cool',
-    joe: 'cool',
-    isRad: true,
-    isWow: true,
-    bill: "cool",
-    isNotCool: false,
-    steve: 'cool',
-    isCool: true
-  }
   const one = parse(`
   bob = cool
   joe=cool
@@ -302,8 +318,17 @@ test('Multiline boolean', () => {
   steve='cool'
   isCool
   `)
-  // console.log('parsedValue', parsedValue)
-  assert.equal(one, answer)
+  // console.log('one', one)
+  assert.equal(one, { 
+    bob: 'cool',
+    joe: 'cool',
+    isRad: true,
+    isWow: true,
+    bill: "cool",
+    isNotCool: false,
+    steve: 'cool',
+    isCool: true
+  })
 })
 
 /************************************************************************************************************
@@ -384,6 +409,91 @@ bill="cool"
 `)
   // console.log('parsedValue', parsedValue)
   assert.equal(one, answer)
+})
+
+test("Handles internal comments in value conflicts", () => {
+  const x = parse(`
+// js single line comment
+/* js single line comment block */
+# hash style comment
+
+valueDoubleQ="with /* comment */ inside"
+
+valueSingleQ='with /* comment */ inside'
+
+valueSingleMultiQ='
+Multi 'line' with
+comment /* comment */ 
+inside
+'
+
+valueDoubleMultiQ="
+Multi "line" with
+comment /* comment */ 
+inside
+"
+
+what='
+  // escaped js single line comment
+  import {foo} from 'lodash'
+  /* escaped js single line comment block */
+  import {bar} from "lodash"
+  # escaped hash style comment
+  import {zaz} from 'lodash'
+'
+
+object={{ rad: ["with a /* comment */ inside", "cool"], cool: { beans: 'dude' } }}
+
+/* key value in comment test=two */
+
+/************************************************************************************************************
+ * Large Comments
+ ***********************************************************************************************************/
+
+actual=value
+
+actualTwo=value # trailing hash style comment
+actualThree=value // trailing js single line comment
+actualFour=value /* trailing js single line comment block */
+
+actualFive='value' # trailing hash style comment
+actualSix='value' // trailing js single line comment
+actualSeven='value' /* trailing js single line comment block */
+
+actualEight="value" # trailing hash style comment
+actualNine="value" // trailing js single line comment
+actualTen="value" /* trailing js single line comment block */
+boo="hello"
+  `)
+  // console.log('x', x)
+  assert.equal(x, {
+    valueDoubleQ: 'with /* comment */ inside',
+    valueSingleQ: 'with /* comment */ inside',
+    valueSingleMultiQ: '\nMulti \'line\' with\ncomment /* comment */ \ninside\n',
+    valueDoubleMultiQ: '\nMulti "line" with\ncomment /* comment */ \ninside\n',
+    what: '\n' +
+      '  // escaped js single line comment\n' +
+      "  import {foo} from 'lodash'\n" +
+      '  /* escaped js single line comment block */\n' +
+      '  import {bar} from "lodash"\n' +
+      '  # escaped hash style comment\n' +
+      "  import {zaz} from 'lodash'\n",
+    object: {
+      rad: [ 'with a /* comment */ inside', 'cool' ],
+      cool: { beans: 'dude' }
+    },
+    actual: 'value',
+    actualTwo: 'value',
+    actualThree: 'value',
+    actualFour: 'value',
+    actualFive: 'value',
+    actualSix: 'value',
+    actualSeven: 'value',
+    actualEight: 'value',
+    actualNine: 'value',
+    actualTen: 'value',
+    boo: 'hello'
+  })
 })
 
 /************************************************************************************************************
@@ -1452,95 +1562,6 @@ test('Trailing commas wierd objects - parseValue', () => {
   ])
 })
 
-
-/************************************************************************************************************
- * Comments
- ***********************************************************************************************************/
-
-test("Handles comments", () => {
-  const x = parse(`
-// js single line comment
-/* js single line comment block */
-# hash style comment
-
-valueDoubleQ="with /* comment */ inside"
-
-valueSingleQ='with /* comment */ inside'
-
-valueSingleMultiQ='
-Multi 'line' with
-comment /* comment */ 
-inside
-'
-
-valueDoubleMultiQ="
-Multi "line" with
-comment /* comment */ 
-inside
-"
-
-what='
-  // escaped js single line comment
-  import {foo} from 'lodash'
-  /* escaped js single line comment block */
-  import {bar} from "lodash"
-  # escaped hash style comment
-  import {zaz} from 'lodash'
-'
-
-object={{ rad: ["with a /* comment */ inside", "cool"], cool: { beans: 'dude' } }}
-
-/* key value in comment test=two */
-
-/************************************************************************************************************
- * Large Comments
- ***********************************************************************************************************/
-
-actual=value
-
-actualTwo=value # trailing hash style comment
-actualThree=value // trailing js single line comment
-actualFour=value /* trailing js single line comment block */
-
-actualFive='value' # trailing hash style comment
-actualSix='value' // trailing js single line comment
-actualSeven='value' /* trailing js single line comment block */
-
-actualEight="value" # trailing hash style comment
-actualNine="value" // trailing js single line comment
-actualTen="value" /* trailing js single line comment block */
-boo="hello"
-  `)
-  console.log('x', x)
-  assert.equal(x, {
-    valueDoubleQ: 'with /* comment */ inside',
-    valueSingleQ: 'with /* comment */ inside',
-    valueSingleMultiQ: '\nMulti \'line\' with\ncomment /* comment */ \ninside\n',
-    valueDoubleMultiQ: '\nMulti "line" with\ncomment /* comment */ \ninside\n',
-    what: '\n' +
-      '  // escaped js single line comment\n' +
-      "  import {foo} from 'lodash'\n" +
-      '  /* escaped js single line comment block */\n' +
-      '  import {bar} from "lodash"\n' +
-      '  # escaped hash style comment\n' +
-      "  import {zaz} from 'lodash'\n",
-    object: {
-      rad: [ 'with a /* comment */ inside', 'cool' ],
-      cool: { beans: 'dude' }
-    },
-    actual: 'value',
-    actualTwo: 'value',
-    actualThree: 'value',
-    actualFour: 'value',
-    actualFive: 'value',
-    actualSix: 'value',
-    actualSeven: 'value',
-    actualEight: 'value',
-    actualNine: 'value',
-    actualTen: 'value',
-    boo: 'hello'
-  })
-})
 
 /************************************************************************************************************
  * MISC
