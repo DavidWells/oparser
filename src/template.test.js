@@ -1,6 +1,6 @@
 const { test } = require('uvu') 
 const assert = require('uvu/assert')
-const { options } = require('../')
+const { options } = require('./')
 
 test('Template tage ones', () => {
   const one = options`foo=bar`
@@ -19,6 +19,5 @@ test('Template tage ones', () => {
     lol: 'cool',
   })
 })
-
 
 test.run()

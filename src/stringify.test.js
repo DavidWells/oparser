@@ -1,6 +1,6 @@
 const { test } = require('uvu') 
 const assert = require('uvu/assert')
-const { stringify } = require('../')
+const { stringify } = require('./stringify')
 
 test('stringify multiline values with `', t => {
   const x = {

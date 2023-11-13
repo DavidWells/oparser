@@ -1,3 +1,4 @@
+/* V0 implementation */
 const { parseJSON } = require('json-alexander')
 
 // alt approach maybe https://github.com/etienne-dldc/literal-parser

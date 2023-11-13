@@ -1,6 +1,6 @@
 const { test } = require('uvu') 
 const assert = require('uvu/assert')
-const { parse, parseValue } = require('./')
+const { parse, parseValue } = require('./old')
 
 test('Empty value', () => {
   assert.equal(parse(), {}, 'undefined val')

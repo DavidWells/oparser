@@ -2,7 +2,7 @@
   "name": "oparser",
   "version": "2.2.1",
   "description": "A very forgiving key-value option parser",
-  "main": "index.js",
+  "main": "src/index.js",
   "author": "David Wells",
   "license": "MIT",
   "keywords": [

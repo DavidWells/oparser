@@ -156,7 +156,7 @@ const output = {
 }
 ```
 
-See [`oparser.test.js`](https://github.com/DavidWells/oparser/blob/master/oparser.test.js) for more usage examples.
+See [`/src/oparser.test.js`](https://github.com/DavidWells/oparser/blob/master/oparser.test.js) for more usage examples.
 
 ## Note
 

@@ -1,4 +1,4 @@
-const { parse, parseValue, stringify, options } = require('./')
+const { parse, parseValue, stringify, options } = require('./src')
 
 
 

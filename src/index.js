@@ -1,4 +1,4 @@
-const { convert, isObjectLike } = require('./utils/convert') 
+const { convert } = require('./utils/convert') 
 const { ensureWrap } = require('./utils/ensure-wrap')
 
 const WHITE_SPACE = /[\s\n\r]/
@@ -596,7 +596,18 @@ function isBalanced(str) {
   }, 0)
 }
 
+/**
+ * Parse string of key value options. Template tag version
+ * @param {string} input - string of options. Can be multiline
+ * @returns {Record<string, any>}
+ */
+function options(input = '', ...substitutions) {
+  let str = String.raw(input, ...substitutions)
+  return parse(str)
+}
+
 module.exports = {
   parse,
-  parseValue
+  parseValue,
+  options
 }
