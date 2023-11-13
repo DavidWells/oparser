@@ -72,9 +72,11 @@ function parse(s) {
 
   /* Trim string and remove comment blocks */
   let str = s.trim()
+  /*
   console.log('>> start str')
   console.log(str)
   console.log('───────────────────────────────')
+  /** */
 
   const isMultiline = str.indexOf('\n') > -1
 
@@ -221,9 +223,11 @@ function parse(s) {
   /* Remove all comments outside of values */
   str = removeComments(str)
 
+  /*
   console.log('>>> CLEAN str')
   console.log(str)
   console.log('───────────────────────────────')
+  /** */
 
   const vals = {}
   let openQuote
@@ -327,7 +331,7 @@ function parse(s) {
         openQuote === '{' && char === '}' && (!nextChar || nextChar !== '}') || 
         openQuote === '[' && char === ']' && (!nextChar || nextChar !== ']')
       ) {
-        //* Debug object values
+        /* Debug object values
         console.log('{} bufferValue', bufferValue)
         /** */
 
@@ -460,41 +464,15 @@ function parseValue(value) {
 }
 
 function preFormat(val, quoteType) {
-
-  let value = removeTempCharacters(val)
-    .replace(TRAILING_COMMAS, '')
-
-  console.log('preFormat value', value)
+  // console.log('preFormat start', val)
+  let value = removeTempCharacters(val).replace(TRAILING_COMMAS, '')
+  // console.log('preFormat value 1', value)
 
   if (quoteType === '{') {
     value = trimBrackets((!value.match(/^{{1,}/) ? quoteType + value : value))
   }
+  // console.log('preFormat value 2', value)
 
-  // TODO remove this for trimBrackets
-  const leadingBrackets = value.match(/^{{2,}/)
-  const trailingBrackets = value.match(/}{2,}$/)
-  // console.log('leadingBrackets', leadingBrackets)
-  // console.log('trailingBrackets', trailingBrackets)
-  if (leadingBrackets && trailingBrackets) {
-    const len = (leadingBrackets[0].length <= trailingBrackets[0].length) ? leadingBrackets : trailingBrackets
-    const trimLength = len[0].length
-    const trimLeading = new RegExp(`^{{${trimLength}}`)
-    const trimTrailing = new RegExp(`}{${trimLength}}$`)
-    if (trimLength) {
-      /*
-      console.log('TRIM', trimLength)
-      console.log('trimLeading', trimLeading)
-      console.log('trimTrailing', trimTrailing)
-      /** */
-
-      value = value
-        // Trim extra leading brackets
-        .replace(trimLeading, '{')
-        // Trim extra trailing brackets
-        .replace(trimTrailing, '}')
-    }
-  }
-  console.log('preFormat value 2', value)
   // JSX style tag value={( stuff )}
   if (value.match(/^{\s*\(([\s\S]+?)\)\s*}$/)) {
     if (value.match(/\{(\(.*\))(\s*)=>(\s*){?([^}]*)+[^}]?}/)) {
@@ -502,7 +480,7 @@ function preFormat(val, quoteType) {
     } else {
       value = value.replace(/^{\s*\(/, '').replace(/\)\s*}$/, '')
     }
-    console.log('preFormat value 3', value)
+    // console.log('preFormat value 3', value)
   }
   // If Doesn't look like JSON object
   else if (value.match(/^{[^:,]*}/)) {
@@ -521,12 +499,8 @@ function preFormat(val, quoteType) {
   else if (value.match(/^{\s*\(?\s*<([a-zA-Z1-6]+)\b([^>]*)>*(?:>([\s\S]*?)<\/\1>|\s?\/?>)\s*\)?\s*}$/)) {
     value = removeSurroundingBrackets(value)
   }
-  console.log('value', value)
-  // // Remove trailing object commas
-  // value = value.replace(/(?:,*[^\S]*)*?}(,)*/gm, '}$1')
-  // // Remove trailing array commas
-  // value = value.replace(/(?:,+[^\S]*)+?]\s*$/gm, ']')
-  // console.log(JSON.parse(value))
+  
+  // console.log('preFormat value 3', value)
 
   /* Check if remaining value is surrounded by quotes */
   const surroundingQuotes = value.match(SURROUNDING_QUOTES) || []

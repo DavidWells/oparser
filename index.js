@@ -60,7 +60,7 @@ function convert(value) {
 
     /* Convert object looking string into values */
     if (isObjectLike(value) && value.indexOf(':') > -1) {
-      console.log('value', value)
+      // console.log('value', value)
       const inner = value.replace(/^{|}$/g, '')
       const kvs = inner.split(',')
       // console.log('inner', inner)
@@ -77,7 +77,7 @@ function convert(value) {
         return acc
       }, '')
       const objToTry =`{ ${newObjectString.replace(/,$/, '')} }`
-      console.log('objToTry', objToTry)
+      // console.log('objToTry', objToTry)
       return parseJSON(objToTry)
     }
     /* Convert array looking string into values */
@@ -201,9 +201,9 @@ const TICKS = replaceInnerCharPattern(space, '`', '`', 2)
 const BRACKETS = replaceInnerCharPattern(space, '{', '}', 2)
 // bob={co ol} steve={co ol} --> add temp spaces
 const TAGS = replaceInnerCharPattern(space, '{<', '>}')
-console.log('TAGS', TAGS)
-console.log('DOUBLE_QUOTES', DOUBLE_QUOTES)
-console.log('QUOTES', QUOTES)
+// console.log('TAGS', TAGS)
+// console.log('DOUBLE_QUOTES', DOUBLE_QUOTES)
+// console.log('QUOTES', QUOTES)
 /**
  * Parse string of key value options
  * @param {string} input - string of options. Can be multiline
@@ -278,7 +278,7 @@ function parse(input) {
       return item.split(BREAK)
     }).flat()
 
-  //*
+  /*
   console.log('cleanLines', cleanLines)
   console.log('lines', lines)
   /** */
@@ -333,7 +333,7 @@ function parse(input) {
 
     if (!acc[RESERVED].match(/^[A-Za-z\._-]+={+/) && isValuePair(curr) && curr.match(isEnding)) {
       const kv = getKeyAndValueFromString(curr, 'one')
-      console.log('kv', kv)
+      // console.log('kv', kv)
       if (kv) {
         // console.log(`ADDED`, kv)
         acc[kv.key] = kv.value
@@ -462,7 +462,7 @@ function hasEmoji(str) {
 }
 
 function getKeyAndValueFromString(string, callLocation) {
-  //*
+  /*
   console.log(`getKeyAndValueFromString from ${callLocation}`)
   console.log(`>>>> "${string}"`)
   /** */

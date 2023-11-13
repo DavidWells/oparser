@@ -570,7 +570,7 @@ test('Handles escaped single quotes', () => {
 
 test('Handles commas after key/values', () => {
   const one = parse(`funny='what', funky="cool", woah="co,ol", weird=what,`)
-  console.log('parsedValue', one)
+  // console.log('parsedValue commas', one)
   assert.equal(one, { 
     funny: 'what',
     funky: "cool",
@@ -614,7 +614,7 @@ test('Handles *', () => {
   haha={{***}}
   rad="*****"
   `)
-  console.log('one', one)
+  // console.log('handles *', one)
   assert.equal(one, answer)
 })
 
@@ -629,7 +629,7 @@ test('Handles inner curly brackets {}', () => {
   two={{xval}}}
   three={weirdval}}
   `)
-  console.log('one', one)
+  // console.log('handles {}', one)
   assert.equal(one, answer)
 })
 
@@ -654,7 +654,7 @@ test.skip('Handles inner curly brackets {}', () => {
   six="{{weirdval}}"
   seven='{{weirdval}}'
   `)
-  console.log('one', one)
+  console.log('one weird brackets', one)
   assert.equal(one, answer)
 })
 
@@ -770,7 +770,7 @@ test('Handles multiline values two (indentation matters)', () => {
     import {zaz} from 'lodash'
   "
   `)
-  console.log('one', one)
+  // console.log('multiline values', one)
   assert.equal(one, {
     what: `
     import {foo} from 'lodash'
@@ -790,7 +790,7 @@ test('Handles multiline values single quotes (indentation matters)', () => {
   '
   bar=true
   `)
-  console.log('one', one)
+  // console.log('multiline values singe quotes', one)
   assert.equal(one, {
     baz: 'yolo',
     what: `
@@ -818,7 +818,7 @@ test('Handles multiline values mixed quotes (indentation matters)', () => {
   
   bar=true
   `)
-  console.log('one', one)
+  // console.log('multiline values mixed quotes', one)
   assert.equal(one, {
     baz: 'yolo',
     what: `
@@ -845,7 +845,7 @@ import {zaz} from 'lodash'
   \`}
   bar=true
   `)
-  console.log('one', one)
+  // console.log('multiline values {`reactStyle`}', one)
   assert.equal(one, {
     baz: 'yolo',
     what: `
@@ -1203,11 +1203,11 @@ tester={(
 
 // This doesnt work
 test("JSX elements two", () => {
-  console.log('DEBUG')
+  // console.log('DEBUG')
   const x = parse(`
     tester={{<span prop={{ foo: 'hasBracket}' }}>jsx style</span>}}
   `) 
-  console.log('x', x)
+  // console.log('x', x)
   assert.equal(
     x,
     {
@@ -1225,7 +1225,7 @@ test('raw object', () => {
   const answer = { key: { a: 'b' } }
   const five = `key={ a : b }`
   const x = parse(five)
-  console.log('x', x)
+  // console.log('x', x)
   assert.equal(answer, x, five)
 })
 
@@ -1389,7 +1389,7 @@ test('Multi line small', () => {
  # other comment
  what='xnxnx'
  isLoading  `)
-  console.log('parsedValue', parsedValue)
+  // console.log('Multi line small', parsedValue)
   assert.equal(parsedValue, {
     great: [ 'scoot', 'sco ot', 'scooo ttt' ],
     nice: { value: 'nice', cool: 'true' },
@@ -1531,7 +1531,7 @@ test('Trailing commas objects - parseValue', () => {
 ]
 `
   const two = parseValue(multiLineTwo)
-  console.log('two', typeof two)
+  //console.log('twox', typeof two)
   assert.equal(two, [
     { cool: true, nice: '1' },
     { cool: false, nice: '2' },
