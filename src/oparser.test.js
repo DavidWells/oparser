@@ -1072,6 +1072,38 @@ test('Complex array with object', () => {
   })
 })
 
+test('JSX handles multiline elements', () => {
+  const a = parse(`
+  customElement={(
+    <div>Custom div</div>
+  )} 
+  singleLine={(<span style={{ color: 'blue' }} color="b"lue">This should be blue</span>)} 
+  htmlContent={(
+    <span style={{ color: 'red' }} color="b'lue">This should be red too</span>
+  )}
+  other={
+    (
+      <span style={{ color: 'yellow' }} color="b'lue">
+        This should be yellow
+      </span>
+    )
+  }
+`)
+  // console.log('ajsx', a)
+  assert.equal(a, {
+    customElement: '\n    <div>Custom div</div>\n  ',
+    singleLine: `<span style={{ color: 'blue' }} color="b"lue">This should be blue</span>`,
+    htmlContent: '\n' +
+      `    <span style={{ color: 'red' }} color="b'lue">This should be red too</span>\n` +
+      '  ',
+    other: '\n' +
+      `      <span style={{ color: 'yellow' }} color="b'lue">\n` +
+      '        This should be yellow\n' +
+      '      </span>\n' +
+      '    '
+  })
+})
+
 
 test("JSX elements", () => {
   assert.equal(

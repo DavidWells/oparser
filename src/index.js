@@ -7,6 +7,7 @@ const VALID_KEY_CHAR = /^[A-Za-z0-9_]/
 const VALID_VALUE_CHAR = /(.*)/
 const TRAILING_COMMAS = /,+$/
 const NOT_OBJECT_LIKE = /^{[^:,]*}/
+const START_WITH_PAREN = /^\s*\(/
 const INFERRED_QUOTE = 'INFERRED'
 const SPACES = '__SPACE__'
 const LINE_BREAK = '__LINEBREAK__'
@@ -17,14 +18,16 @@ const HASH = '_HASHP_'
 const DOUBLE_SLASH = '_SLASH_SLASH_'
 const CURLY_OPEN = '_O_C_'
 const CURLY_CLOSE = '_C_C_'
+const PAREN_CLOSE = '_P_C_'
 
 function removeTempCharacters(val, rep) {
   if (typeof val === 'string') {
     return val
       .replace(/_S_Q_/g, `'`)
       .replace(/_D_Q_/g, `"`)
-      .replace(/_O_C_/g, `{`)
+      // .replace(/_O_C_/g, `{`)
       .replace(/_C_C_/g, `}`)
+      // .replace(/_P_C_/g, `)`)
       .replace(/_STAR_/g, `*`)
       .replace(/_HASHP_/g, `#`)
       .replace(/_SLASH_SLASH_/g, `//`)
@@ -32,11 +35,13 @@ function removeTempCharacters(val, rep) {
   return val
 }
 
-function replaceInnerCharPattern(char = '\\s', open, close, repeat = 0, allSpace) {
+function replaceInnerCharPattern(char = '\\s', open, close, repeat = 0, flags) {
   // og /\s(?=(?:(?:[^"]*(?:")){2})*[^"]*(?:")[^"]*$)/g
   const repeatVal = (repeat) ? `{${repeat}}` : ''
-  const o = (allSpace) ? '' : open
-  return new RegExp(`${char}(?=(?:(?:[^${open}]*(?:${open}))${repeatVal})*[^${o}]*(?:${close})[^${close}]*$)`, 'g')
+  // const o = (allSpace) ? '' : open
+  const o = open
+  const f = flags || 'g'
+  return new RegExp(`${char}(?=(?:(?:[^${open}]*(?:${open}))${repeatVal})*[^${o}]*(?:${close})[^${close}]*$)`, f)
 }
 
 const space = ' '
@@ -53,11 +58,26 @@ const SPACES_IN_DOUBLE_QUOTE_RE = replaceInnerCharPattern(space, '"', '"', 2)
 const LINEBREAKS_IN_SINGLE_QUOTE_RE = replaceInnerCharPattern('\\n', "'", "'", 2)
 const LINEBREAKS_IN_DOUBLE_QUOTE_RE = replaceInnerCharPattern('\\n', '"', '"', 2)
 
+/* Construct regex patterns */
+const CONFLICTING_CURLIES_IN_SINGLE = replaceInnerCharPattern("}", `'`, `'`, 2)
+const CONFLICTING_CURLIES_IN_DOUBLE = replaceInnerCharPattern("}", `"`, `"`, 2)
+const CONFLICTING_HASH_IN_SINGLE = replaceInnerCharPattern("#", `'`, `'`, 2)
+const CONFLICTING_HASH_IN_DOUBLE = replaceInnerCharPattern("#", `"`, `"`, 2)
+const CONFLICTING_SLASHSLASH_IN_SINGLE = replaceInnerCharPattern("\\/\\/", `'`, `'`, 2)
+const CONFLICTING_SLASHSLASH_IN_DOUBLE = replaceInnerCharPattern("\\/\\/", `"`, `"`, 2)
+
 /*
+console.log('Patterns')
 console.log('SPACES_IN_SINGLE_QUOTE_RE', SPACES_IN_SINGLE_QUOTE_RE)
 console.log('SPACES_IN_DOUBLE_QUOTE_RE', SPACES_IN_DOUBLE_QUOTE_RE)
 console.log('LINEBREAKS_IN_SINGLE_QUOTE_RE', LINEBREAKS_IN_SINGLE_QUOTE_RE)
 console.log('LINEBREAKS_IN_DOUBLE_QUOTE_RE', LINEBREAKS_IN_DOUBLE_QUOTE_RE)
+console.log('CONFLICTING_CURLIES_IN_SINGLE', CONFLICTING_CURLIES_IN_SINGLE)
+console.log('CONFLICTING_CURLIES_IN_DOUBLE', CONFLICTING_CURLIES_IN_DOUBLE)
+console.log('CONFLICTING_HASH_IN_SINGLE', CONFLICTING_HASH_IN_SINGLE)
+console.log('CONFLICTING_HASH_IN_DOUBLE', CONFLICTING_HASH_IN_DOUBLE)
+console.log('CONFLICTING_SLASHSLASH_IN_SINGLE', CONFLICTING_SLASHSLASH_IN_SINGLE)
+console.log('CONFLICTING_SLASHSLASH_IN_DOUBLE', CONFLICTING_SLASHSLASH_IN_DOUBLE)
 /** */
 
 /**
@@ -140,17 +160,10 @@ function parse(s) {
   console.log('───────────────────────────────')
   /** */
 
-  /* Construct regex patterns */
-  const CONFLICTING_BRACKETS_IN_SINGLE = replaceInnerCharPattern("}", `'`, `'`, 2)
-  const CONFLICTING_BRACKETS_IN_DOUBLE = replaceInnerCharPattern("}", `"`, `"`, 2)
-  const CONFLICTING_HASH_IN_SINGLE = replaceInnerCharPattern("#", `'`, `'`, 2)
-  const CONFLICTING_HASH_IN_DOUBLE = replaceInnerCharPattern("#", `"`, `"`, 2)
-  const CONFLICTING_SLASHSLASH_IN_SINGLE = replaceInnerCharPattern("\\/\\/", `'`, `'`, 2)
-  const CONFLICTING_SLASHSLASH_IN_DOUBLE = replaceInnerCharPattern("\\/\\/", `"`, `"`, 2)
 
   /* Conflicting inner  } */
-  const hasConflictingCurliesInSingle = CONFLICTING_BRACKETS_IN_SINGLE.test(str)
-  const hasConflictingCurliesInDouble = CONFLICTING_BRACKETS_IN_DOUBLE.test(str)
+  const hasConflictingCurliesInSingle = CONFLICTING_CURLIES_IN_SINGLE.test(str)
+  const hasConflictingCurliesInDouble = CONFLICTING_CURLIES_IN_DOUBLE.test(str)
   /* Conflicting inner # */
   const hasConflictingHashesInSingle = CONFLICTING_HASH_IN_SINGLE.test(str)
   const hasConflictingHashesInDouble = CONFLICTING_HASH_IN_DOUBLE.test(str)
@@ -159,17 +172,9 @@ function parse(s) {
   const hasConflictingSlashesInDouble = CONFLICTING_SLASHSLASH_IN_DOUBLE.test(str)
 
   /*
-  console.log('Patterns')
-  console.log('CONFLICTING_BRACKETS_IN_SINGLE', CONFLICTING_BRACKETS_IN_SINGLE)
-  console.log('CONFLICTING_BRACKETS_IN_DOUBLE', CONFLICTING_BRACKETS_IN_DOUBLE)
-  console.log('CONFLICTING_HASH_IN_SINGLE', CONFLICTING_HASH_IN_SINGLE)
-  console.log('CONFLICTING_HASH_IN_DOUBLE', CONFLICTING_HASH_IN_DOUBLE)
-  console.log('CONFLICTING_SLASHSLASH_IN_SINGLE', CONFLICTING_SLASHSLASH_IN_SINGLE)
-  console.log('CONFLICTING_SLASHSLASH_IN_DOUBLE', CONFLICTING_SLASHSLASH_IN_DOUBLE)
-  /** */
-
-  /*
   console.log('Conflicts')
+  console.log('hasInnerSpacesInSinglesQuote', hasInnerSpacesInSinglesQuote)
+  console.log('hasInnerSpacesInDoubleQuote', hasInnerSpacesInDoubleQuote)
   console.log('hasConflictingCurliesInSingle', hasConflictingCurliesInSingle)
   console.log('hasConflictingCurliesInDouble', hasConflictingCurliesInDouble)
   console.log('hasConflictingHashesInSingle', hasConflictingHashesInSingle)
@@ -178,13 +183,28 @@ function parse(s) {
   console.log('hasConflictingSlashesInDouble', hasConflictingSlashesInDouble)
   /** */
 
+  // const hasConflictingParen = CONFLICTING_PARENS_IN_SINGLE.test(str)
+  // console.log('hasConflictingParen', hasConflictingParen)
+  // if (hasConflictingParen) {
+  //    str = str
+  //     .replace(CONFLICTING_PARENS_IN_SINGLE, PAREN_CLOSE)
+  //     // Fix trailing )} closes
+  //     // .replace(/_P_C_(\s*})/g, ')$1')
+  // }
+
   /* Has inner "}" in single quotes */
   if (hasConflictingCurliesInSingle) {
-     str = str.replace(CONFLICTING_BRACKETS_IN_SINGLE, `${CURLY_CLOSE}`)
+     str = str
+      .replace(CONFLICTING_CURLIES_IN_SINGLE, `${CURLY_CLOSE}`)
+      /* Replace conflicting inner close parens ) to support jsx */
+      .replace(/(\s+)?\)_C_C_(__LINEBREAK__|__SPACE__|\s+)/g, '$1)}$2')
   }
   /* Has inner "}" in double quotes */
   if (hasConflictingCurliesInDouble) {
-    str = str.replace(CONFLICTING_BRACKETS_IN_DOUBLE, `${CURLY_CLOSE}`)
+    str = str
+      .replace(CONFLICTING_CURLIES_IN_DOUBLE, `${CURLY_CLOSE}`)
+      /* Replace conflicting inner close parens ) to support jsx */
+      .replace(/(\s+)?\)_C_C_(__LINEBREAK__|__SPACE__|\s+)/g, '$1)}$2')
   }
 
   /* Has inner "#" in single quotes */
@@ -345,15 +365,11 @@ function parse(s) {
           continue;
         }
 
-        const bracketsBalanced = isBalanced(bufferValue)
-        // console.log('bracketsBalanced', bracketsBalanced)
+  
+        const theOpenQuote = START_WITH_PAREN.test(bufferValue) ? '(' : openQuote
+        const newBalance = isBalanced(bufferValue, theOpenQuote)
 
-        // if (!bracketsBalanced) {
-        //   const tester = trimBrackets(bufferValue)
-        //   console.log('tester', tester)
-        // }
-
-        if (bracketsBalanced) {
+        if (newBalance) {
           const openIsBracket = openQuote === '['
           const value = (openIsBracket) ? `[${bufferValue}]` : ensureWrap(bufferValue, '{', '}')
           const cleanValue = preFormat(value)
@@ -361,9 +377,24 @@ function parse(s) {
           console.log(`>>>> Close bracket value`, value)
           console.log(`>>>> Close bracket cleanValue`, cleanValue)
           /** */
-          save(bufferKey, cleanValue, 'Object')
+          save(bufferKey, cleanValue, 'New balance')
           continue
         }
+
+        // const bracketsBalanced = areAllBracketsBalanced(bufferValue)
+        // console.log('bracketsBalanced', bracketsBalanced)
+
+        // if (bracketsBalanced) {
+        //   const openIsBracket = openQuote === '['
+        //   const value = (openIsBracket) ? `[${bufferValue}]` : ensureWrap(bufferValue, '{', '}')
+        //   const cleanValue = preFormat(value)
+        //   /*
+        //   console.log(`>>>> Close bracket value`, value)
+        //   console.log(`>>>> Close bracket cleanValue`, cleanValue)
+        //   /** */
+        //   save(bufferKey, cleanValue, 'Object')
+        //   continue
+        // }
       }
 
       /* Last loop */
@@ -426,7 +457,9 @@ function parse(s) {
       
       const isQuoteStart = char === '\'' || char === '"' || char === '`'
       // console.log('isQuoteStart', isQuoteStart)
+      
       if (!openQuote && isQuoteStart) {
+        // bufferValue+= char
         openQuote = char
         bufferValue+= char
         continue;
@@ -585,11 +618,29 @@ function trimBrackets(value, open = '', close = '') {
  * @param  {string}  str - string with code
  * @return {Boolean}
  */
-function isBalanced(str) {
+function areAllBracketsBalanced(str) {
   return !str.split('').reduce((uptoPrevChar, thisChar) => {
     if (thisChar === '(' || thisChar === '{' || thisChar === '[') {
       return ++uptoPrevChar
     } else if (thisChar === ')' || thisChar === '}' || thisChar === ']') {
+      return --uptoPrevChar
+    }
+    return uptoPrevChar
+  }, 0)
+}
+
+const bracketTypes = {
+  '(': ')',
+  '{': '}',
+  '[': ']',
+}
+
+function isBalanced(str, open = '{') {
+  const close = bracketTypes[open]
+  return !str.split('').reduce((uptoPrevChar, thisChar) => {
+    if (thisChar === open) {
+      return ++uptoPrevChar
+    } else if (thisChar === close) {
       return --uptoPrevChar
     }
     return uptoPrevChar
