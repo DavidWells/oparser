@@ -115,8 +115,8 @@ function parse(s) {
   if (isMultiline) {
     str = str
       /* fix unblanced inner single quote conflicts https://regex101.com/r/kLNXg8/1 */
-      .replace(/(=)(')([^\n']*)(')\n(?=(?:(?:[^']*(?:')){2})*[^']*(?:')[^']*$)/g, `$1${OUTER_SINGLE_QUOTE}$3${OUTER_SINGLE_QUOTE}`)
-      .replace(/(=)(")([^\n']*)(")\n(?=(?:(?:[^"]*(?:")){2})*[^"]*(?:")[^"]*$)/g, `$1${OUTER_DOUBLE_QUOTE}$3${OUTER_DOUBLE_QUOTE}`)
+      .replace(/(=)(')([^\n']*)(')(\s*\n\s*)(?=(?:(?:[^']*(?:')){2})*[^']*(?:')[^']*$)/g, `$1${OUTER_SINGLE_QUOTE}$3${OUTER_SINGLE_QUOTE}$5`)
+      .replace(/(=)(")([^\n']*)(")(\s*\n\s*)(?=(?:(?:[^"]*(?:")){2})*[^"]*(?:")[^"]*$)/g, `$1${OUTER_DOUBLE_QUOTE}$3${OUTER_DOUBLE_QUOTE}$5`)
       /* Replace spaces in single quotes with temporary spaces */
       .replace(LINEBREAKS_IN_SINGLE_QUOTE_RE, `${LINE_BREAK}\n`)
       /* Replace spaces in double quotes with temporary spaces */
@@ -196,6 +196,7 @@ function parse(s) {
       str = str.replace(/_D_Q_ ([A-Za-z0-9_]*=)/, '" $1')
     }
   }
+  
   /*
   console.log('>>>>> 2 pass')
   console.log(str)

@@ -1297,6 +1297,34 @@ test('Object jsx style weird yyy', () => {
   }, 'd')
 })
 
+test('Handles unbalanced single quote in multiline', () => {
+  const d = parse(`
+class='foo' 
+style='color: red;'
+color="b'lue"
+`)
+  // console.log('d', d)
+  assert.equal(d, {
+    class: 'foo',
+    style: 'color: red;',
+    color: "b'lue",
+  }, 'd')
+})
+
+test('Handles unbalanced double quote in multiline', () => {
+  const d = parse(`
+class="foo" 
+style="color: red;"
+color='b"lue'
+`)
+  // console.log('d', d)
+  assert.equal(d, {
+    class: 'foo',
+    style: 'color: red;',
+    color: 'b"lue',
+  }, 'd')
+})
+
 test('Object jsx style weird xxx', () => {
   const d = parse(`
   style='color: red;'
