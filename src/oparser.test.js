@@ -785,7 +785,7 @@ test('Handles multiline values single quotes (indentation matters)', () => {
   baz="yolo"
   what='
     import {foo} from 'lodash'
-    import {bar} from "lodash"
+    import {bar} from "lod"ash"
     import {zaz} from 'lodash'
   '
   bar=true
@@ -795,7 +795,7 @@ test('Handles multiline values single quotes (indentation matters)', () => {
     baz: 'yolo',
     what: `
     import {foo} from 'lodash'
-    import {bar} from "lodash"
+    import {bar} from "lod"ash"
     import {zaz} from 'lodash'
   `,
    bar: true
@@ -1287,6 +1287,39 @@ test('Simple object', () => {
   assert.equal(b, answerTwo)
 })
 
+
+test('Object jsx style weird yyy', () => {
+  const d = parse(`style='color: red;' color="b'lue"`)
+  // console.log('d', d)
+  assert.equal(d, {
+    style: 'color: red;',
+    color: "b'lue",
+  }, 'd')
+})
+
+test('Object jsx style weird xxx', () => {
+  const d = parse(`
+  style='color: red;'
+  color="b'lue"
+  what='
+  import {foo} from 'lodash'
+import {bar} from 'lodash'
+import {zaz} from 'lodash'
+'
+`)
+  // console.log('d', d)
+  assert.equal(d, {
+    style: 'color: red;',
+    color: "b'lue",
+    what: `
+  import {foo} from 'lodash'
+import {bar} from 'lodash'
+import {zaz} from 'lodash'
+`
+  }, 'd')
+})
+
+
 test('Object jsx style weird on', () => {
   const d = parse(`
   style={{
@@ -1305,7 +1338,71 @@ test('Object jsx style weird on', () => {
   }, 'd')
 })
 
-test('Object jsx style weird', () => {
+test('JSON', () => {
+  const json = {
+    "widget": {
+      "debug": "on",
+      "window": {
+        "title": "Sample Konfabulator Widget",
+        "name": "main_window",
+        "width": 500,
+        "height": 500
+      },
+      "image": {
+        "src": "Images/Sun.png",
+        "name": "sun1",
+        "hOffset": 250,
+        "vOffset": 250,
+        "alignment": "center",
+        "array": ["one", "two", "three"]
+      },
+      "text": {
+        "data": "Click Here",
+        "size": 36,
+        "style": "bold",
+        "name": "text1",
+        "hOffset": 250,
+        "vOffset": 100,
+        "alignment": "center",
+        "onMouseUp": "sun1.opacity = (sun1.opacity / 100) * 90;"
+      }
+    }
+  }
+
+  const jsonString = `
+  widget={
+      "debug": "on",
+      "window": {
+        "title": "Sample Konfabulator Widget",
+        "name": "main_window",
+        "width": 500,
+        "height": 500
+      },
+      "image": {
+        "src": "Images/Sun.png",
+        "name": "sun1",
+        "hOffset": 250,
+        "vOffset": 250,
+        "alignment": "center",
+        "array": ['one', 'two', 'three'],
+      },
+      "text": {
+        "data": "Click Here",
+        "size": 36,
+        "style": "bold",
+        "name": "text1",
+        "hOffset": 250,
+        "vOffset": 100,
+        "alignment": "center",
+        "onMouseUp": "sun1.opacity = (sun1.opacity / 100) * 90;"
+      }
+    }
+  `
+  const b = parse(jsonString)
+  assert.equal(b, json, 'json example')
+})
+
+test('Object jsx style single line', () => {
   const answer = {
     style: { color: 'red' },
     color: "b'lue",
@@ -1319,7 +1416,9 @@ test('Object jsx style weird', () => {
 
   const c = parse(`style={{ color: 'red' }} color="b'lue" cool='test"hdhdhd'`)
   assert.equal(c, answer, 'c')
+})
 
+test('Object jsx style weird', () => {
   const d = parse(`
   style={{
     color: 'red', 

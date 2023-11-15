@@ -12,12 +12,14 @@ const INFERRED_QUOTE = 'INFERRED'
 const SPACES = '__SPACE__'
 const LINE_BREAK = '__LINEBREAK__'
 const SINGLE_QUOTE = '_S_Q_'
+const OUTER_SINGLE_QUOTE = '_OSQ_'
+const OUTER_DOUBLE_QUOTE = '_ODQ_'
 const DOUBLE_QUOTE = '_D_Q_'
 const STARS = '_STAR_'
 const HASH = '_HASHP_'
 const DOUBLE_SLASH = '_SLASH_SLASH_'
-const CURLY_OPEN = '_O_C_'
 const CURLY_CLOSE = '_C_C_'
+const CURLY_OPEN = '_O_C_'
 const PAREN_CLOSE = '_P_C_'
 
 function removeTempCharacters(val, rep) {
@@ -76,8 +78,7 @@ const CONFLICTING_SLASHSLASH_IN_DOUBLE = replaceInnerCharPattern("\\/\\/", `"`, 
 console.log('Patterns')
 console.log('SPACES_IN_SINGLE_QUOTE_RE', SPACES_IN_SINGLE_QUOTE_RE)
 console.log('SPACES_IN_DOUBLE_QUOTE_RE', SPACES_IN_DOUBLE_QUOTE_RE)
-console.log('DOUBLE_IN_SINGLE_QUOTE_RE', DOUBLE_IN_SINGLE_QUOTE_RE)
-console.log('SINGLE_IN_DOUBLE_QUOTE_RE', SINGLE_IN_DOUBLE_QUOTE_RE)
+
 console.log('LINEBREAKS_IN_SINGLE_QUOTE_RE', LINEBREAKS_IN_SINGLE_QUOTE_RE)
 console.log('LINEBREAKS_IN_DOUBLE_QUOTE_RE', LINEBREAKS_IN_DOUBLE_QUOTE_RE)
 console.log('CONFLICTING_CURLIES_IN_SINGLE', CONFLICTING_CURLIES_IN_SINGLE)
@@ -86,6 +87,8 @@ console.log('CONFLICTING_HASH_IN_SINGLE', CONFLICTING_HASH_IN_SINGLE)
 console.log('CONFLICTING_HASH_IN_DOUBLE', CONFLICTING_HASH_IN_DOUBLE)
 console.log('CONFLICTING_SLASHSLASH_IN_SINGLE', CONFLICTING_SLASHSLASH_IN_SINGLE)
 console.log('CONFLICTING_SLASHSLASH_IN_DOUBLE', CONFLICTING_SLASHSLASH_IN_DOUBLE)
+// console.log('DOUBLE_IN_SINGLE_QUOTE_RE', DOUBLE_IN_SINGLE_QUOTE_RE)
+// console.log('SINGLE_IN_DOUBLE_QUOTE_RE', SINGLE_IN_DOUBLE_QUOTE_RE)
 /** */
 
 /**
@@ -100,6 +103,7 @@ function parse(s) {
 
   /* Trim string and remove comment blocks */
   let str = s.trim()
+  
   /*
   console.log('>> start str')
   console.log(str)
@@ -110,11 +114,16 @@ function parse(s) {
 
   if (isMultiline) {
     str = str
+      /* fix unblanced inner single quote conflicts https://regex101.com/r/kLNXg8/1 */
+      .replace(/(=)(')([^\n']*)(')\n(?=(?:(?:[^']*(?:')){2})*[^']*(?:')[^']*$)/g, `$1${OUTER_SINGLE_QUOTE}$3${OUTER_SINGLE_QUOTE}`)
+      .replace(/(=)(")([^\n']*)(")\n(?=(?:(?:[^"]*(?:")){2})*[^"]*(?:")[^"]*$)/g, `$1${OUTER_DOUBLE_QUOTE}$3${OUTER_DOUBLE_QUOTE}`)
       /* Replace spaces in single quotes with temporary spaces */
       .replace(LINEBREAKS_IN_SINGLE_QUOTE_RE, `${LINE_BREAK}\n`)
       /* Replace spaces in double quotes with temporary spaces */
       .replace(LINEBREAKS_IN_DOUBLE_QUOTE_RE, `${LINE_BREAK}\n`)
   }
+
+  // console.log('pre pass', str)
   
   const hasInnerSpacesInSinglesQuote = SPACES_IN_SINGLE_QUOTE_RE.test(str)
   SPACES_IN_SINGLE_QUOTE_RE.lastIndex = 0 // Reset regex pattern due to g flag https://bit.ly/2UCNhJz
@@ -140,25 +149,23 @@ function parse(s) {
       /* Replace spaces in single quotes with temporary spaces */
       .replace(SINGLE_QUOTES_STAR_PATTERN, STARS)
       .replace(SPACES_IN_SINGLE_QUOTE_RE, SPACES)
-      /* Fix inner single quotes */
+      /* Fix inner conflicting single quotes */
       .replace(/__SPACE__'/g, ` ${SINGLE_QUOTE}`)
-      /* Fix inner single quotes */
       .replace(/'__SPACE__/g, `${SINGLE_QUOTE} `)
-      // /* Fix  trailing close quote */
+      /* Unbalanced single or double quotes break previous regex, so we need to fix */
+      /* Fix  trailing close quote */
       .replace(/(\s*)((__SPACE__)+)+(\s*)_S_Q_(\s*)/g, `$1$2$4'$5`)
-
+      /* Fix unbalanced quote bracket replacement */
       .replace(/}__SPACE__([\S])/, '} $1')
 
-      /* Fix Single ' space key=val */ 
-      .replace(/_S_Q_ ([A-Za-z0-9_]*=|__LINEBREAK__)/, "' $1")
-      //.replace(/([A-Za-z0-9_]: )_S_Q_/, "$1'")
-
-      // // fix what='xnxnx_S_Q_
-      //.replace(/='(.*)_S_Q_$/gm, "='$1'")
     if (isMultiline) {
-      str = str.replace(/([^=\]\}])'__LINEBREAK__$/gm, `$1${SINGLE_QUOTE}`)
+      str = str.replace(/([^=\]\}])'((__LINEBREAK__)+)+$/gm, `$1${SINGLE_QUOTE}`)
+    } else {
+      /* Fix Single ' space key=val */ 
+      str = str.replace(/_S_Q_ ([A-Za-z0-9_]*=)/, "' $1")
     }
   }
+
   /*
   console.log('>>>>> 1 pass')
   console.log(str)
@@ -173,19 +180,20 @@ function parse(s) {
     str = str
       .replace(SPACES_IN_DOUBLE_QUOTE_RE, SPACES)
       .replace(DOUBLE_QUOTES_STAR_PATTERN, STARS)
+      /* Fix inner conflicting double quotes */
       .replace(/__SPACE__"/g, ` ${DOUBLE_QUOTE}`)
       .replace(/"__SPACE__/g, `${DOUBLE_QUOTE} `)
-       /* Fix  trailing close quote */
+      /* Unbalanced single or double quotes break previous regex, so we need to fix */
+      /* Fix trailing close quote */
       .replace(/(\s*)((__SPACE__)+)+(\s*)_D_Q_(\s*)/g, `$1$2$4"$5`)
-
+       /* Fix  unbalanced quote bracket replacement */
       .replace(/}__SPACE__([\S])/, '} $1')
-      /* Fix Double " space key=val */ 
-      .replace(/_D_Q_ ([A-Za-z0-9_]*=|__LINEBREAK__)/, '" $1')
-      // .replace(/([A-Za-z0-9_]: )_D_Q_/, '$1"')
-      // // fix what='xnxnx_S_Q_
-      // .replace(/="(.*)_D_Q_$/gm, '="$1"')
+ 
     if (isMultiline) {
-      str = str.replace(/([^=\]\}])"__LINEBREAK__$/gm, `$1${DOUBLE_QUOTE}`)
+      str = str.replace(/([^=\]\}])"((__LINEBREAK__)+)+$/gm, `$1${DOUBLE_QUOTE}`)
+    } else {
+      /* Fix Double " space key=val */ 
+      str = str.replace(/_D_Q_ ([A-Za-z0-9_]*=)/, '" $1')
     }
   }
   /*
@@ -270,8 +278,13 @@ function parse(s) {
   /** */
 
   if (hasInnerSpacesInSinglesQuote || hasInnerSpacesInDoubleQuote) {
-    /* Replace temporary spaces */
-    str = str.replace(/__SPACE__/g, ' ')
+    str = str
+      /* Replace temporary spaces */
+      .replace(/__SPACE__/g, ' ')
+      /* Replace temporary outer single quotes */
+      .replace(/_OSQ_/g, "'")
+       /* Replace temporary outer single quotes */
+      .replace(/_ODQ_/g, '"')
     if (isMultiline) {
       /* Replace temporary line breaks */
       str = str.replace(/__LINEBREAK__/g, '')

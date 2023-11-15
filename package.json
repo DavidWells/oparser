@@ -22,7 +22,7 @@
     "release:major": "npm version major && npm publish"
   },
   "dependencies": {
-    "json-alexander": "^0.1.9"
+    "json-alexander": "^0.1.10"
   },
   "devDependencies": {
     "uvu": "^0.5.1"
