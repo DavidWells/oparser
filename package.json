@@ -15,14 +15,14 @@
     "url": "git+https://github.com/DavidWells/oparser.git"
   },
   "scripts": {
-    "test": "uvu . '.test.([mc]js|[jt]sx?)$'",
+    "test": "uvu src '.test.([mc]js|[jt]sx?)$'",
     "publish": "git push origin && git push origin --tags",
     "release:patch": "npm version patch && npm publish",
     "release:minor": "npm version minor && npm publish",
     "release:major": "npm version major && npm publish"
   },
   "dependencies": {
-    "json-alexander": "^0.1.8"
+    "json-alexander": "^0.1.9"
   },
   "devDependencies": {
     "uvu": "^0.5.1"

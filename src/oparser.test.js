@@ -1287,6 +1287,56 @@ test('Simple object', () => {
   assert.equal(b, answerTwo)
 })
 
+test('Object jsx style weird on', () => {
+  const d = parse(`
+  style={{
+    color: 'red', 
+    whatever: "co'ol",
+  }}
+  foo={{ rad: ["whatever", "man", "with spaces", 2], cool: { beans: 'here' } }}
+  color="blue"
+  cool='testhdhdhd'
+`)
+  assert.equal(d, {
+    style: { color: 'red', whatever: "co'ol"  },
+    foo: { rad: ["whatever", "man", "with spaces", 2], cool: { beans: 'here' } },
+    color: "blue",
+    cool: 'testhdhdhd'
+  }, 'd')
+})
+
+test('Object jsx style weird', () => {
+  const answer = {
+    style: { color: 'red' },
+    color: "b'lue",
+    cool: 'test"hdhdhd'
+  }
+  const a = parse(`cool='test"hdhdhd' style={{ color: 'red' }} color="b'lue"`)
+  assert.equal(a, answer, 'a')
+
+  const b = parse(`style={{ color: 'red' }} cool='test"hdhdhd' color="b'lue"`)
+  assert.equal(b, answer, 'b')
+
+  const c = parse(`style={{ color: 'red' }} color="b'lue" cool='test"hdhdhd'`)
+  assert.equal(c, answer, 'c')
+
+  const d = parse(`
+  style={{
+    color: 'red', 
+    whatever: "co'ol",
+  }}
+  foo={{ rad: ["whatever", "man", "with spaces", 2], cool: { beans: 'here' } }}
+  color="blue"
+  cool='testhdhdhd'`)
+  assert.equal(d, {
+    style: { color: 'red', whatever: "co'ol"  },
+    foo: { rad: ["whatever", "man", "with spaces", 2], cool: { beans: 'here' } },
+    color: "blue",
+    cool: 'testhdhdhd'
+  }, 'd')
+})
+
+
 test('Object in quotes is string', () => {
   const a = parse(`key="{ xjsjsj }"`)
   assert.equal(a, {

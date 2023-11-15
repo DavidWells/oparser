@@ -49,6 +49,12 @@ const space = ' '
 const SPACES_IN_SINGLE_QUOTE_RE = replaceInnerCharPattern(space, "'", "'", 2)
 // bob="co ol" steve="c ool" --> add temp spaces
 const SPACES_IN_DOUBLE_QUOTE_RE = replaceInnerCharPattern(space, '"', '"', 2)
+
+// // bob='co ol' steve='c ool' --> add temp spaces
+// const DOUBLE_IN_SINGLE_QUOTE_RE = replaceInnerCharPattern('"', "'", "'", 2)
+// // bob="co ol" steve="c ool" --> add temp spaces
+// const SINGLE_IN_DOUBLE_QUOTE_RE = replaceInnerCharPattern("'", '"', '"', 2)
+
 // // bob={co ol} steve={co ol} --> add temp spaces
 // const BRACKETS_PATTERN = replaceInnerCharPattern(space, '{', '}', 2, true)
 // // bob=`co ol` steve=`c ool` --> add temp spaces
@@ -70,6 +76,8 @@ const CONFLICTING_SLASHSLASH_IN_DOUBLE = replaceInnerCharPattern("\\/\\/", `"`, 
 console.log('Patterns')
 console.log('SPACES_IN_SINGLE_QUOTE_RE', SPACES_IN_SINGLE_QUOTE_RE)
 console.log('SPACES_IN_DOUBLE_QUOTE_RE', SPACES_IN_DOUBLE_QUOTE_RE)
+console.log('DOUBLE_IN_SINGLE_QUOTE_RE', DOUBLE_IN_SINGLE_QUOTE_RE)
+console.log('SINGLE_IN_DOUBLE_QUOTE_RE', SINGLE_IN_DOUBLE_QUOTE_RE)
 console.log('LINEBREAKS_IN_SINGLE_QUOTE_RE', LINEBREAKS_IN_SINGLE_QUOTE_RE)
 console.log('LINEBREAKS_IN_DOUBLE_QUOTE_RE', LINEBREAKS_IN_DOUBLE_QUOTE_RE)
 console.log('CONFLICTING_CURLIES_IN_SINGLE', CONFLICTING_CURLIES_IN_SINGLE)
@@ -111,6 +119,20 @@ function parse(s) {
   const hasInnerSpacesInSinglesQuote = SPACES_IN_SINGLE_QUOTE_RE.test(str)
   SPACES_IN_SINGLE_QUOTE_RE.lastIndex = 0 // Reset regex pattern due to g flag https://bit.ly/2UCNhJz
 
+  // const hasInnerDoubleInSinglesQuote = DOUBLE_IN_SINGLE_QUOTE_RE.test(str)
+  // DOUBLE_IN_SINGLE_QUOTE_RE.lastIndex = 0 // Reset regex pattern due to g flag https://bit.ly/2UCNhJz
+
+  // const hasInnerSingleInDoubleQuote = SINGLE_IN_DOUBLE_QUOTE_RE.test(str)
+  // SINGLE_IN_DOUBLE_QUOTE_RE.lastIndex = 0 // Reset regex pattern due to g flag https://bit.ly/2UCNhJz
+
+  // if (hasInnerSingleInDoubleQuote) {
+  //    str = str.replace(SINGLE_IN_DOUBLE_QUOTE_RE, 'INNER_SINGLE')
+  // }
+
+  // if (hasInnerDoubleInSinglesQuote) {
+  //    str = str.replace(DOUBLE_IN_SINGLE_QUOTE_RE, 'INNER_DOUBLE')
+  // }
+
   if (hasInnerSpacesInSinglesQuote) {
     const SINGLE_QUOTES_STAR_PATTERN = replaceInnerCharPattern('\\*', `'`, `'`, 2)
     // console.log('SINGLE_QUOTES_STAR_PATTERN', SINGLE_QUOTES_STAR_PATTERN)
@@ -124,6 +146,13 @@ function parse(s) {
       .replace(/'__SPACE__/g, `${SINGLE_QUOTE} `)
       // /* Fix  trailing close quote */
       .replace(/(\s*)((__SPACE__)+)+(\s*)_S_Q_(\s*)/g, `$1$2$4'$5`)
+
+      .replace(/}__SPACE__([\S])/, '} $1')
+
+      /* Fix Single ' space key=val */ 
+      .replace(/_S_Q_ ([A-Za-z0-9_]*=|__LINEBREAK__)/, "' $1")
+      //.replace(/([A-Za-z0-9_]: )_S_Q_/, "$1'")
+
       // // fix what='xnxnx_S_Q_
       //.replace(/='(.*)_S_Q_$/gm, "='$1'")
     if (isMultiline) {
@@ -146,8 +175,13 @@ function parse(s) {
       .replace(DOUBLE_QUOTES_STAR_PATTERN, STARS)
       .replace(/__SPACE__"/g, ` ${DOUBLE_QUOTE}`)
       .replace(/"__SPACE__/g, `${DOUBLE_QUOTE} `)
-      // /* Fix  trailing close quote */
+       /* Fix  trailing close quote */
       .replace(/(\s*)((__SPACE__)+)+(\s*)_D_Q_(\s*)/g, `$1$2$4"$5`)
+
+      .replace(/}__SPACE__([\S])/, '} $1')
+      /* Fix Double " space key=val */ 
+      .replace(/_D_Q_ ([A-Za-z0-9_]*=|__LINEBREAK__)/, '" $1')
+      // .replace(/([A-Za-z0-9_]: )_D_Q_/, '$1"')
       // // fix what='xnxnx_S_Q_
       // .replace(/="(.*)_D_Q_$/gm, '="$1"')
     if (isMultiline) {
@@ -198,6 +232,8 @@ function parse(s) {
       .replace(CONFLICTING_CURLIES_IN_SINGLE, `${CURLY_CLOSE}`)
       /* Replace conflicting inner close parens ) to support jsx */
       .replace(/(\s+)?\)_C_C_(__LINEBREAK__|__SPACE__|\s+)/g, '$1)}$2')
+      // {{ color: 'red' }} val Object jsx style weird test
+      .replace(/_C_C__C_C_ /g, '}} ')
   }
   /* Has inner "}" in double quotes */
   if (hasConflictingCurliesInDouble) {
@@ -205,6 +241,8 @@ function parse(s) {
       .replace(CONFLICTING_CURLIES_IN_DOUBLE, `${CURLY_CLOSE}`)
       /* Replace conflicting inner close parens ) to support jsx */
       .replace(/(\s+)?\)_C_C_(__LINEBREAK__|__SPACE__|\s+)/g, '$1)}$2')
+      // {{ color: 'red' }} val Object jsx style weird test
+      .replace(/_C_C__C_C_ /g, '}} ')
   }
 
   /* Has inner "#" in single quotes */

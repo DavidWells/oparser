@@ -8,8 +8,8 @@ const OBJECT_REGEX = /^\s*\{([\s\S]*?)\}\s*$/
 const TRAILING_COMMAS = /,+$/
 // https://regex101.com/r/99mkDt/1 old /(?:,*[^\S]*)+?]$/
 const TRAILING_ARRAY_COMMAS = /(?:,+[^\S]*)+?](,)*\s*/
-// https://regex101.com/r/cy7mLe/2
-const TRAILING_OBJECT_COMMAS = /(?:,*[^\S]*)*?}(,)*\s*$/
+// https://regex101.com/r/cy7mLe/4
+const TRAILING_OBJECT_COMMAS = /(?:,[^\S]*)+(})(,*)\s*$/
 
 const TRAILING_ARRAY_COMMAS_GLOBAL = /(?:,+[^\S]*)+?](,)*\s*/gm
 
@@ -47,6 +47,7 @@ function formatObj(value) {
     }
     const k = parts[0].trim()
     const v = parts[1].trim()
+    // console.log('v', v)
     acc += `${ensureWrap(k, '"')}: ${ensureWrap(v, '"')}${comma}`
     // console.log('parts', parts)
     return acc
@@ -100,9 +101,9 @@ function convert(value) {
           .replace(TRAILING_ARRAY_COMMAS_GLOBAL, ']')
           // trim inner newlines
           // .replace(/(,*[^\S]*)*?},\n*\s*/g, '},')
-        // console.log('cleaner', value)
         cleaner = value
-      } 
+        // console.log('cleaner', value)
+      }
       const val = parseJSON(value) // last attempt to format an array like [ one, two ]
       // console.log('Do it', val)
       return val
