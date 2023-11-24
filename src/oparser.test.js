@@ -1325,6 +1325,33 @@ color='b"lue'
   }, 'd')
 })
 
+test('Multiline jsx style prop', () => {
+  const five = `
+  class='foo'
+  style='color: red; margin: 20px; display: block;'
+  color="b'lue"
+  funky={\`
+  <Wow>
+    <Rad>xyz</Rad>
+    <Fake>booo</Fake>
+  </Wow>
+  \`}
+`
+  const x = parse(five)
+  // console.log('x', x)
+  assert.equal(x, {
+    class: 'foo',
+    style: 'color: red; margin: 20px; display: block;',
+    color: "b'lue",
+    funky: `
+  <Wow>
+    <Rad>xyz</Rad>
+    <Fake>booo</Fake>
+  </Wow>
+  `
+  }, five)
+})
+
 test('Object jsx style weird xxx', () => {
   const d = parse(`
   style='color: red;'
