@@ -111,7 +111,6 @@ function parse(s) {
   /** */
 
   const isMultiline = str.indexOf('\n') > -1
-
   if (isMultiline) {
     str = str
       /* fix unblanced inner single quote conflicts https://regex101.com/r/kLNXg8/1 */
@@ -286,10 +285,11 @@ function parse(s) {
       .replace(/_OSQ_/g, "'")
        /* Replace temporary outer single quotes */
       .replace(/_ODQ_/g, '"')
-    if (isMultiline) {
-      /* Replace temporary line breaks */
-      str = str.replace(/__LINEBREAK__/g, '')
-    }
+  }
+
+  if (isMultiline) {
+    /* Replace temporary line breaks */
+    str = str.replace(/__LINEBREAK__/g, '')
   }
 
   /* Remove all comments outside of values */

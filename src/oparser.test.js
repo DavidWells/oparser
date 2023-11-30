@@ -2074,4 +2074,16 @@ test('Single line bools', () => {
   })
 })
 
+test('Weird linebreak escape', () => {
+  const val = parse(` href="foo\
+bar"`)
+  assert.equal(val, { href: 'foobar' })
+})
+
+test('Weird linebreak escape two', () => {
+  const val = parse(` href="foo\\
+bar"`)
+  assert.equal(val, { href: 'foo\\\nbar' })
+})
+
 test.run()
