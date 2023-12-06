@@ -2086,4 +2086,25 @@ bar"`)
   assert.equal(val, { href: 'foo\\\nbar' })
 })
 
+test('inline jsx fn _≡►', () => {
+  const val = parse(`onClick={()_≡► _alert('hi')}`)
+  assert.equal(val, { onClick: "()_≡► _alert('hi')" })
+})
+
+test('inline jsx fn =>', () => {
+  const val = parse(`onClick={() => _alert('hi')}`)
+  assert.equal(val, { onClick: "() => _alert('hi')" })
+})
+
+test('inline jsx fn multiline', () => {
+  const val = parse(`onClick={() => {
+    alert('hi')
+  }
+}`)
+  assert.equal(val, { onClick: `() => {
+    alert('hi')
+  }
+`})
+})
+
 test.run()

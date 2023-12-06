@@ -1,4 +1,4 @@
-const { parse, parseValue, stringify, options } = require('./src')
+const { parse, parseValue, stringify, options } = require('../src')
 
 
 
@@ -14,8 +14,14 @@ console.log(parse(five))
 /** */
 
 
-//*
+/*
 const val = parse(` href="foo\\
 bar"`)
+console.log('val', val)
+/** */
+
+
+//*
+const val = parse(`onClick={()_≡► _alert('hi')}`)
 console.log('val', val)
 /** */

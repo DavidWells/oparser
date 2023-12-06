@@ -74,6 +74,7 @@ const CONFLICTING_HASH_IN_DOUBLE = replaceInnerCharPattern("#", `"`, `"`, 2)
 const CONFLICTING_SLASHSLASH_IN_SINGLE = replaceInnerCharPattern("\\/\\/", `'`, `'`, 2)
 const CONFLICTING_SLASHSLASH_IN_DOUBLE = replaceInnerCharPattern("\\/\\/", `"`, `"`, 2)
 
+const ASYNC_ARROW = /(?:async\s+)?\s?\(([\s\S]*)\)\s?(=>|_≡►)\s*(?:(?:[^}{]+|\{(?:[^}{]+|\{[^}{]*\})*\})*(?:\s?\(.*\)\s?\)\s?)?)?(?:\;)?/
 /*
 console.log('Patterns')
 console.log('SPACES_IN_SINGLE_QUOTE_RE', SPACES_IN_SINGLE_QUOTE_RE)
@@ -417,8 +418,7 @@ function parse(s) {
           continue;
         }
 
-  
-        const theOpenQuote = START_WITH_PAREN.test(bufferValue) ? '(' : openQuote
+        const theOpenQuote = START_WITH_PAREN.test(bufferValue) && !ASYNC_ARROW.test(bufferValue) ? '(' : openQuote
         const newBalance = isBalanced(bufferValue, theOpenQuote)
 
         if (newBalance) {
@@ -549,7 +549,7 @@ function parseValue(value) {
 }
 
 function preFormat(val, quoteType) {
-  // console.log('preFormat start', val)
+  // console.log('preFormat start', val, quoteType)
   let value = removeTempCharacters(val).replace(TRAILING_COMMAS, '')
   // console.log('preFormat value 1', value)
 
@@ -560,12 +560,13 @@ function preFormat(val, quoteType) {
 
   // JSX style tag value={( stuff )}
   if (value.match(/^{\s*\(([\s\S]+?)\)\s*}$/)) {
-    if (value.match(/\{(\(.*\))(\s*)=>(\s*){?([^}]*)+[^}]?}/)) {
+    // console.log('value', value)
+    if (value.match(ASYNC_ARROW)) {
       value = removeSurroundingBrackets(value)
     } else {
       value = value.replace(/^{\s*\(/, '').replace(/\)\s*}$/, '')
     }
-    // console.log('preFormat value 3', value)
+    // console.log('preFormat value tow', value)
   }
   // If Doesn't look like JSON object
   else if (value.match(/^{[^:,]*}/)) {
@@ -584,7 +585,6 @@ function preFormat(val, quoteType) {
   else if (value.match(/^{\s*\(?\s*<([a-zA-Z1-6]+)\b([^>]*)>*(?:>([\s\S]*?)<\/\1>|\s?\/?>)\s*\)?\s*}$/)) {
     value = removeSurroundingBrackets(value)
   }
-  
   // console.log('preFormat value 3', value)
 
   /* Check if remaining value is surrounded by quotes */
@@ -597,6 +597,7 @@ function preFormat(val, quoteType) {
 
 
 function removeSurroundingBrackets(val) {
+  // console.log('val', val)
   return val.replace(/^{/, '').replace(/}$/, '')
 }
 
@@ -688,6 +689,7 @@ const bracketTypes = {
 }
 
 function isBalanced(str, open = '{') {
+  // console.log('open open', open)
   const close = bracketTypes[open]
   return !str.split('').reduce((uptoPrevChar, thisChar) => {
     if (thisChar === open) {
