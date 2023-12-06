@@ -22,6 +22,12 @@ const CURLY_CLOSE = '_C_C_'
 const CURLY_OPEN = '_O_C_'
 const PAREN_CLOSE = '_P_C_'
 
+const BRACKET_TYPES = {
+  '(': ')',
+  '{': '}',
+  '[': ']',
+}
+
 function removeTempCharacters(val, rep) {
   if (typeof val === 'string') {
     return val
@@ -423,9 +429,11 @@ function parse(s) {
 
         if (newBalance) {
           const openIsBracket = openQuote === '['
+          // bufferValue = bufferValue + char
           const value = (openIsBracket) ? `[${bufferValue}]` : ensureWrap(bufferValue, '{', '}')
           const cleanValue = preFormat(value)
           /*
+          console.log('char', char)
           console.log(`>>>> Close bracket value`, value)
           console.log(`>>>> Close bracket cleanValue`, cleanValue)
           /** */
@@ -558,14 +566,11 @@ function preFormat(val, quoteType) {
   }
   // console.log('preFormat value 2', value)
 
-  // JSX style tag value={( stuff )}
-  if (value.match(/^{\s*\(([\s\S]+?)\)\s*}$/)) {
-    // console.log('value', value)
-    if (value.match(ASYNC_ARROW)) {
-      value = removeSurroundingBrackets(value)
-    } else {
-      value = value.replace(/^{\s*\(/, '').replace(/\)\s*}$/, '')
-    }
+  if (value.match(ASYNC_ARROW)) {
+    value = isBalanced(value, '{') ? removeSurroundingBrackets(value) : removeSurroundingBrackets(value + '}')
+  } else if (value.match(/^{\s*\(([\s\S]+?)\)\s*}$/)) {
+    // JSX style tag value={( stuff )}
+    value = value.replace(/^{\s*\(/, '').replace(/\)\s*}$/, '')
     // console.log('preFormat value tow', value)
   }
   // If Doesn't look like JSON object
@@ -682,19 +687,12 @@ function areAllBracketsBalanced(str) {
   }, 0)
 }
 
-const bracketTypes = {
-  '(': ')',
-  '{': '}',
-  '[': ']',
-}
-
 function isBalanced(str, open = '{') {
-  // console.log('open open', open)
-  const close = bracketTypes[open]
+  // console.log('isBalanced open', open)
   return !str.split('').reduce((uptoPrevChar, thisChar) => {
     if (thisChar === open) {
       return ++uptoPrevChar
-    } else if (thisChar === close) {
+    } else if (thisChar === BRACKET_TYPES[open]) { // close char
       return --uptoPrevChar
     }
     return uptoPrevChar

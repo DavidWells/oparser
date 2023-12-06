@@ -2107,4 +2107,55 @@ test('inline jsx fn multiline', () => {
 `})
 })
 
+test('JSX fn multiline three', () => {
+  const val = parse(`
+onClick={() => {
+  console.log('hi')
+}}
+`)
+  assert.equal(val, { onClick: `() => {
+  console.log('hi')
+}` })
+})
+
+
+test('JSX fn multiline async', () => {
+  const val = parse(`
+onClick={async () => {
+  console.log('hi')
+}}
+`)
+  assert.equal(val, { onClick: `async () => {
+  console.log('hi')
+}` })
+})
+
+
+test('JSX fn multiline async named fn', () => {
+  const val = parse(`
+onClick={async function foo() => {
+  console.log('hi')
+}}
+`)
+  assert.equal(val, { onClick: `async function foo() => {
+  console.log('hi')
+}` })
+})
+
+test('JSX fn multi multi line fn', () => {
+  const val = parse(`
+onClick={() => {
+  console.log('hi')
+  alert('foo')
+  console.log("bar")
+}}
+`)
+  assert.equal(val, { onClick: `() => {
+  console.log('hi')
+  alert('foo')
+  console.log("bar")
+}` })
+})
+
+
 test.run()
