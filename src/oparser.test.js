@@ -2158,4 +2158,13 @@ onClick={() => {
 })
 
 
+test('Parses URL', () => {
+  const val = parse(`
+src=https://raw.githubusercontent.com/DavidWells/awesome-stoicism/master/scripts/generate.js // remove
+`)
+  assert.equal(val, {
+    src: 'https://raw.githubusercontent.com/DavidWells/awesome-stoicism/master/scripts/generate.js'
+  })
+})
+
 test.run()

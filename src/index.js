@@ -615,7 +615,7 @@ function removeComments(input) {
     // Trailing single line comments
     .replace(/\s*(\/\/+|\/\*+|#+)(.*)\n$/gm, '')
     // trailing yaml comments not in quotes
-    .replace(/\s*(\/\/+|\/\*+|#+)([^"'\n]*)$/gm, '')
+    .replace(/\s+(\/\/+|\/\*+|#+)([^"'\n]*)$/gm, '')
     // .replace(/#.*$/gm, '')
 }
 
