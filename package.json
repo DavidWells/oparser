@@ -1,6 +1,6 @@
 {
   "name": "oparser",
-  "version": "3.0.7",
+  "version": "3.0.8",
   "description": "A very forgiving key-value option parser",
   "main": "src/index.js",
   "author": "David Wells",
