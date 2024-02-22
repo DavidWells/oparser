@@ -300,6 +300,7 @@ function parse(s) {
   }
 
   /* Remove all comments outside of values */
+  // console.log('str', str)
   str = removeComments(str)
 
   /*
@@ -609,7 +610,7 @@ function removeSurroundingBrackets(val) {
 function removeComments(input) {
   return input
     // Remove JS comment blocks and single line comments https://regex101.com/r/XKHU18/2 | alt https://regex101.com/r/ywd8TT/1
-    .replace(/\s?\/\*[\s\S]*?\*\/|\s+\/\/.*$/gm, '')
+    .replace(/\s+\/\*[\s\S]*?\*\/|\s+\/\/.*$/gm, '')
     // Remove single line comments
     .replace(/^\s*(\/\/+|\/\*+|#+)(.*)\n?$/gm, '')
     // Trailing single line comments
