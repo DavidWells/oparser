@@ -48,4 +48,52 @@ object={{"cool": true, "nice": "awesome"}}
 })
 
 
+test('stringify deep', () => {
+  const props = {
+    "okay": "cool",
+    "components": [
+      {
+        "type": "fullimage",
+        "height": 400,
+        "heading": "Heading here...",
+        "component": "fullimage",
+        "subheading": "ccccccc"
+      },
+      {
+        "type": "nice",
+        "height": 400,
+        "heading": "rad here...",
+        "component": "fullimage",
+        "subheading": "ccccccc",
+        array: ['hi', 'there' ]
+      }
+    ]
+  }
+
+  const optsStringTwo = stringify(props, { separator: '\n' })
+  // console.log('optsStringTwo', optsStringTwo)
+  assert.equal(optsStringTwo, `
+okay="cool"
+components={[{
+  "type": "fullimage",
+  "height": 400,
+  "heading": "Heading here...",
+  "component": "fullimage",
+  "subheading": "ccccccc"
+}, {
+  "type": "nice",
+  "height": 400,
+  "heading": "rad here...",
+  "component": "fullimage",
+  "subheading": "ccccccc",
+  "array": [
+    "hi",
+    "there"
+  ]
+}]}
+`.trim())
+})
+
+
+
 test.run()

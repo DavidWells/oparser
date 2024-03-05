@@ -1,5 +1,5 @@
 /**
- * Turn object into optional string
+ * Turn object into options string
  * @param {Record<string, any>} obj 
  * @param {object} opts 
  * @returns {string}
@@ -14,10 +14,10 @@ function stringify(obj, opts = {}) {
       return type !== 'undefined' && val !== null && type !== 'function'
     })
     .map(([attr, val], i) => {
-      let value = format(val)
+      let value = format(val, opts)
       /* return array of items */
       if (Array.isArray(value)) {
-        const mapped = format(val)
+        const mapped = format(val, opts)
         return `${attr}${joiner}{[${mapped.join(', ')}]}`
       }
       if (typeof val === 'object') {
@@ -32,18 +32,26 @@ function stringify(obj, opts = {}) {
   return attrs
 }
 
-function format(val) {
+function format(val, opts, insideArray) {
+  // console.log(typeof val, val)
   const type = typeof val
-  if (type === 'undefined' || val === null) return val
-  if (type === 'string') return ensureQuote(val)
-  if (Array.isArray(val)) return val.map((v) => format(v))
+  if (type === 'undefined' || val === null) {
+    return val
+  }
+  if (type === 'string') {
+    return ensureQuote(val)
+  }
+  if (Array.isArray(val)) {
+    return val.map((v) => format(v, opts, 'array'))
+  }
   if (typeof val === 'object') {
     const obj = {}
     const keys = Object.keys(val)
     for (let i = 0; i < keys.length; i++) {
-      obj[keys[i]] = format(val[keys[i]])
-      return obj
+      obj[keys[i]] = format(val[keys[i]], opts)
     }
+    const multiline = opts.separator === '\n' ? 2 : 0
+    return (insideArray) ? `${JSON.stringify(obj, null, multiline).replace(/"\\"/g, '"').replace(/\\""/g, '"')}` : obj
   }
   return val
 }
