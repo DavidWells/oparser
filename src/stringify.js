@@ -86,11 +86,13 @@ function jsonToJsObjectTwo(jsonStr = '') {
 }
 
 function jsonToJsObject(str){
-  arr = str.match(/".*?":/g);
+  // console.log('str', str)
+  arr = str.match(/"[^"\n]*?":/g)
   for (var i = 0; i < arr.length; i++) {
+    // console.log('arr[i]', arr[i])
     str = str.replace(arr[i], arr[i].replace(/"/g, ''))
   }
-  return str;
+  return str
 }
 
 function format(val, opts, insideArray, insideObject) {

@@ -257,5 +257,61 @@ funky={{ bunch: {and: {deep: {value: "cool"}}} }}
 })
 
 
+test('stringify longer', () => {
+  const object = {
+    components: [
+      {
+          "type": "featuredpost",
+          "heading": "Featured Post"
+      },
+      {
+          "type": "columns",
+          "number": "1",
+          "box": false,
+          "columns": [
+              {
+                  "content": "Column 2 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim blandit volutpat maecenas volutpat blandit aliquam etiam. Luctus accumsan tortor posuere ac. Euismod elementum nisi quis eleifend quam. Hendrerit dolor magna eget est lorem ipsum dolor. Tincidunt tortor aliquam nulla facilisi cras fermentum odio eu feugiat. Quis viverra nibh cras pulvinar. Hendrerit gravida rutrum quisque non tellus. Viverra ipsum nunc aliquet bibendum. Purus ut faucibus pulvinar elementum integer enim neque volutpat ac"
+              },
+              {
+                  "content": "colomn 1 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim blandit volutpat maecenas volutpat blandit aliquam etiam. Luctus accumsan tortor posuere ac. Euismod elementum nisi quis eleifend quam. Hendrerit dolor magna eget est lorem ipsum dolor. Tincidunt tortor aliquam nulla facilisi cras fermentum odio eu feugiat. Quis viverra nibh cras pulvinar. Hendrerit gravida rutrum quisque non tellus. Viverra ipsum nunc aliquet bibendum. Purus ut faucibus pulvinar elementum integer enim neque volutpat ac"
+              }
+          ]
+      }
+  ]
+  }
+
+  const stringValue = stringify(object, { 
+    separator: '\n',
+    prettier: true,
+    // asJs: false,
+    // singleLineValues: true,
+  })
+  const parsedValue = parse(stringValue)
+  /*
+  console.log('stringValue', stringValue)
+  console.log('parsedValue', parsedValue)
+  /** */
+  assert.equal(stringValue, `
+components={[{ type: "featuredpost", heading: "Featured Post" }, {
+  type: "columns",
+  number: "1",
+  box: false,
+  columns: [
+    {
+      content: "Column 2 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim blandit volutpat maecenas volutpat blandit aliquam etiam. Luctus accumsan tortor posuere ac. Euismod elementum nisi quis eleifend quam. Hendrerit dolor magna eget est lorem ipsum dolor. Tincidunt tortor aliquam nulla facilisi cras fermentum odio eu feugiat. Quis viverra nibh cras pulvinar. Hendrerit gravida rutrum quisque non tellus. Viverra ipsum nunc aliquet bibendum. Purus ut faucibus pulvinar elementum integer enim neque volutpat ac"
+    },
+    {
+      content: "colomn 1 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim blandit volutpat maecenas volutpat blandit aliquam etiam. Luctus accumsan tortor posuere ac. Euismod elementum nisi quis eleifend quam. Hendrerit dolor magna eget est lorem ipsum dolor. Tincidunt tortor aliquam nulla facilisi cras fermentum odio eu feugiat. Quis viverra nibh cras pulvinar. Hendrerit gravida rutrum quisque non tellus. Viverra ipsum nunc aliquet bibendum. Purus ut faucibus pulvinar elementum integer enim neque volutpat ac"
+    }
+  ]
+}]}
+`.trim())
+
+
+  assert.equal(parsedValue, object)
+})
+
+
+
 
 test.run()
