@@ -14,6 +14,9 @@ function stringify(obj, opts = {}) {
   if (typeof opts.compressed === 'undefined') {
     opts.compressed = false
   }
+  if (Array.isArray(obj)) {
+    return formatObject(obj, opts)
+  }
   const attrs = Object.entries(obj)
     // filter out non-serializable values
     .filter(([attr, val]) => {

@@ -312,6 +312,23 @@ components={[{ type: "featuredpost", heading: "Featured Post" }, {
 })
 
 
+test('stringify array', () => {
+  const inputArray = [{type: 'dimensions', width: 108, height: 2222}]
+  const inputObject = {
+    settings: inputArray
+  }
+
+  const stringValue = stringify(inputArray)
+  // console.log('stringValue', stringValue)
+  assert.is(stringValue, '[{ type: "dimensions", width: 108, height: 2222 }]')
+
+  const stringValueTwo = stringify(inputObject, {
+    separator: ' ',
+    // asJs: false,
+  })
+  //console.log('stringValueTwo', stringValueTwo)
+  assert.is(stringValueTwo, 'settings={[{ type: "dimensions", width: 108, height: 2222 }]}')
+})
 
 
 test.run()
