@@ -2167,4 +2167,15 @@ src=https://raw.githubusercontent.com/DavidWells/awesome-stoicism/master/scripts
   })
 })
 
+test('Remove surrounding quotes', () => {
+  const val = parse(`"files=README.md, **.md"`)
+  const result = {
+    files: 'README.md',
+    '**.md': true
+  }
+  assert.equal(val, result)
+  assert.equal(parse(`'files=README.md, **.md'`), result)
+  assert.equal(parse("`files=README.md, **.md`"), result)
+})
+
 test.run()

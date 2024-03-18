@@ -110,6 +110,15 @@ function parse(s) {
 
   /* Trim string and remove comment blocks */
   let str = s.trim()
+
+  /* If surrounded by double quotes, remove them */
+  if (str[0] === '"' && str[str.length - 1] === '"') {
+    str = str.replace(/^"|"$/g, '')
+  } else if (str[0] === "'" && str[str.length - 1] === "'") {
+    str = str.replace(/^'|'$/g, '')
+  } else if (str[0] === "`" && str[str.length - 1] === "`") {
+    str = str.replace(/^`|`$/g, '')
+  }
   
   /*
   console.log('>> start str')
@@ -322,6 +331,7 @@ function parse(s) {
     console.log(`Save from "${from}" in quote ▶ ${openQuote} ◀`, value)
     /** */
     vals[key] = value
+    // vals[removeTempCharacters(key)] = value
     openQuote = ''
     bufferKey = ''
     bufferValue = ''
