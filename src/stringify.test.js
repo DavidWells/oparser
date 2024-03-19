@@ -330,5 +330,24 @@ test('stringify array', () => {
   assert.is(stringValueTwo, 'settings={[{ type: "dimensions", width: 108, height: 2222 }]}')
 })
 
+test('stringify empty object', () => {
+  const inputObject = {
+    dimensions: {},
+  }
+
+  const stringValue = stringify(inputObject)
+  // console.log('stringValue', stringValue)
+  assert.is(stringValue, '')
+
+  const inputObjectTwo = {
+    dimensions: {},
+    hello: 'world'
+  }
+  const stringValueTwo = stringify(inputObjectTwo, {
+    separator: ' ',
+  })
+  //console.log('stringValueTwo', stringValueTwo)
+  assert.is(stringValueTwo, 'hello="world"')
+})
 
 test.run()

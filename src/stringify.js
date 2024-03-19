@@ -21,6 +21,14 @@ function stringify(obj, opts = {}) {
     // filter out non-serializable values
     .filter(([attr, val]) => {
       const type = typeof val
+      /* Trim empty arrays */
+      if (Array.isArray(val) && val.length === 0) {
+        return false
+      }
+      /* Trim empty objects */
+      if (val && type === 'object' && Object.keys(val).length === 0) {
+        return false
+      }
       return type !== 'undefined' && val !== null && type !== 'function'
     })
     .map(([attr, val], i) => {
@@ -91,6 +99,10 @@ function jsonToJsObjectTwo(jsonStr = '') {
 function jsonToJsObject(str){
   // console.log('str', str)
   arr = str.match(/"[^"\n]*?":/g)
+  if (!arr) {
+    return ''
+  }
+
   for (var i = 0; i < arr.length; i++) {
     // console.log('arr[i]', arr[i])
     str = str.replace(arr[i], arr[i].replace(/"/g, ''))
