@@ -2202,4 +2202,15 @@ test('double char', () => {
   assert.equal(parse(` x y `), result)
 })
 
+test('char with equal', () => {
+  const result = {
+    x: 'y',
+  }
+  const val = parse(`x=y`)
+  assert.equal(val, result)
+  assert.equal(parse(`x=y `), result)
+  assert.equal(parse(` x=y`), result)
+  assert.equal(parse(` x=y `), result)
+})
+
 test.run()
