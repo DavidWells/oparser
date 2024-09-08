@@ -2188,6 +2188,15 @@ test('Single char', () => {
   assert.equal(parse(` x`), result)
   assert.equal(parse(` x `), result)
   assert.equal(parse(`   x    `), result)
+
+  const result2 = {
+    0: true
+  }
+  assert.equal(parse(`0`), result2)
+  assert.equal(parse(`0 `), result2)
+  assert.equal(parse(` 0`), result2)
+  assert.equal(parse(` 0 `), result2)
+  assert.equal(parse(`   0    `), result2)
 })
 
 test('double char', () => {
@@ -2195,11 +2204,20 @@ test('double char', () => {
     x: true,
     y: true
   }
-  const val = parse(`x y`)
-  assert.equal(val, result)
+  assert.equal(parse(`x y`), result)
   assert.equal(parse(`x y `), result)
   assert.equal(parse(` x y`), result)
   assert.equal(parse(` x y `), result)
+
+  const result2 = {
+    0: true,
+    5: true
+  }
+  assert.equal(parse(`0 5`), result2)
+  assert.equal(parse(`0 5 `), result2)
+  assert.equal(parse(` 0 5 `), result2)
+  assert.equal(parse(` 0 5`), result2)
+  assert.equal(parse(`   0  5  `), result2)
 })
 
 test('char with equal', () => {
