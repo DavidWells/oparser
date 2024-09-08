@@ -2178,4 +2178,28 @@ test('Remove surrounding quotes', () => {
   assert.equal(parse("`files=README.md, **.md`"), result)
 })
 
+test('Single char', () => {
+  const result = {
+    x: true
+  }
+  const val = parse(`x`)
+  assert.equal(val, result)
+  assert.equal(parse(`x `), result)
+  assert.equal(parse(` x`), result)
+  assert.equal(parse(` x `), result)
+  assert.equal(parse(`   x    `), result)
+})
+
+test('double char', () => {
+  const result = {
+    x: true,
+    y: true
+  }
+  const val = parse(`x y`)
+  assert.equal(val, result)
+  assert.equal(parse(`x y `), result)
+  assert.equal(parse(` x y`), result)
+  assert.equal(parse(` x y `), result)
+})
+
 test.run()

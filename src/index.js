@@ -120,6 +120,10 @@ function parse(s) {
     str = str.replace(/^`|`$/g, '')
   }
   
+  /* If string is a single character, return it as bool */
+  if (str.length === 1) {
+    return { [str]: true }
+  }
   /*
   console.log('>> start str')
   console.log(str)
@@ -328,7 +332,7 @@ function parse(s) {
 
   function save(key, value, from) {
     /* Debug values
-    console.log(`Save from "${from}" in quote ▶ ${openQuote} ◀`, value)
+    console.log(`Save ${key} from "${from}" in quote ▶ ${openQuote} ◀`, value)
     /** */
     vals[key] = value
     // vals[removeTempCharacters(key)] = value
@@ -361,8 +365,15 @@ function parse(s) {
       continue;
     }
 
+    /* If last char and not white space, add to key */
+    if (keyIsOpen && !nextChar && VALID_KEY_CHAR.test(char)) {
+      bufferKey+= char
+      save(bufferKey, true, 'last key')
+      continue;
+    }
+
     /* If has key and is break, set bool */
-    if (keyIsOpen && bufferKey && (WHITE_SPACE.test(char) || !nextChar) ) {
+    if (keyIsOpen && bufferKey && (WHITE_SPACE.test(char) || !nextChar)) {
       if (!nextChar) {
         // Last char add it
         bufferKey+= char
