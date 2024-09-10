@@ -2311,6 +2311,27 @@ components={[{
   })
 })
 
+
+test('Parses extra escapes', () => {
+  const value = parse(`components={[{
+    type: "content",
+    content: "Content here...\n\n<Builder\n  components={[{ type: \\"content\\", content: \\"Content here... woah\\" }]}\n/>"
+  }]}`)
+  // console.log('value', value)
+  assert.equal(value, {
+  components: [
+      {
+        type: 'content',
+        content: 'Content here...\n' +
+          '\n' +
+          '<Builder\n' +
+          '  components={[{ type: "content", content: "Content here... woah" }]}\n' +
+          '/>'
+      }
+    ]
+  })
+})
+
 test('nested jsons three', () => {
   const value = parse(`
 components={[{
