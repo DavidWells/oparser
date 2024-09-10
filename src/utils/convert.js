@@ -57,19 +57,19 @@ function replaceBetweenMarkers(input, pattern, replace) {
   return updatedString
 }
 
-const CONFLICTING_INNER_COLONS_SINGLE = replaceInnerCharPattern(":", `'`, `'`, 2)
-const CONFLICTING_INNER_COLONS_DOUBLE = replaceInnerCharPattern(":", `"`, `"`, 2)
-
 const CONFLICTING_INNER_JSON_IN_SINGLE = replaceInnerCharPattern("{\\[{", `'`, `'`, 2)
 const CONFLICTING_INNER_JSON_IN_DOUBLE = replaceInnerCharPattern("{\\[{", `"`, `"`, 2)
 
 const CONFLICTING_INNER_JSON_CLOSE_IN_DOUBLE = replaceInnerCharPattern("}\\]}", `"`, `"`, 2)
-// const CONFLICTING_INNER_JSON_CLOSE_IN_SINGLE = replaceInnerCharPattern("}\\]}", `'`, `'`, 2)
+const CONFLICTING_INNER_JSON_CLOSE_IN_SINGLE = replaceInnerCharPattern("}\\]}", `'`, `'`, 2)
+
+// const CONFLICTING_INNER_COLONS_SINGLE = replaceInnerCharPattern(":", `'`, `'`, 2)
+// const CONFLICTING_INNER_COLONS_DOUBLE = replaceInnerCharPattern(":", `"`, `"`, 2)
 
 function cleanObjectString(value) {
   return value
       .replace(/\n/g, '\\n')
-      .replace(/__INNER_COLON__/g, ':')
+      // .replace(/__INNER_COLON__/g, ':')
       .replace(/_COMMA_/g, ',')
       // .replace(/__EQ__/g, '=')
       .replace(/__inner_dbl_quote__/g, '\\"')
@@ -82,8 +82,8 @@ function cleanObjectString(value) {
 
 function formatObj(value) {
 
-  const hasConflictingInnerColonInSingle = CONFLICTING_INNER_COLONS_SINGLE.test(value)
-  const hasConflictingInnerColonInDouble = CONFLICTING_INNER_COLONS_DOUBLE.test(value)
+  // const hasConflictingInnerColonInSingle = CONFLICTING_INNER_COLONS_SINGLE.test(value)
+  // const hasConflictingInnerColonInDouble = CONFLICTING_INNER_COLONS_DOUBLE.test(value)
 
   const hasConflictingInnerJsonInSingle = CONFLICTING_INNER_JSON_IN_SINGLE.test(value)
   const hasConflictingInnerJsonInDouble = CONFLICTING_INNER_JSON_IN_DOUBLE.test(value)
@@ -92,43 +92,79 @@ function formatObj(value) {
   // const hasConflictingCurliesInDouble = CONFLICTING_CURLIES_IN_DOUBLE.test(value)
 
   const hasConflictingJsonClose = CONFLICTING_INNER_JSON_CLOSE_IN_DOUBLE.test(value)
+  const hasConflictingJsonCloseSingle = CONFLICTING_INNER_JSON_CLOSE_IN_SINGLE.test(value)
 
   if (hasConflictingInnerJsonInDouble) {
     value = value.replace(CONFLICTING_INNER_JSON_IN_DOUBLE, '__OPEN_JSON__OBJECT__')
+  }
+  if (hasConflictingInnerJsonInSingle) {
+    value = value.replace(CONFLICTING_INNER_JSON_IN_SINGLE, '__OPEN_JSON__OBJECT__')
   }
 
   if (hasConflictingJsonClose) {
     value = value.replace(CONFLICTING_INNER_JSON_CLOSE_IN_DOUBLE, '__CLOSE_JSON__OBJECT__')
   }
-
-  if (hasConflictingInnerColonInSingle) {
-    value = value.replace(CONFLICTING_INNER_COLONS_SINGLE, '__INNER_COLON__')
-  }
-  if (hasConflictingInnerColonInDouble) {
-    value = value.replace(CONFLICTING_INNER_COLONS_DOUBLE, '__INNER_COLON__')
+  if (hasConflictingJsonCloseSingle) {
+    value = value.replace(CONFLICTING_INNER_JSON_CLOSE_IN_SINGLE, '__CLOSE_JSON__OBJECT__')
   }
 
-  // console.log('BEFORE', value)
-  // console.log('───────────────────────────────')
+  // if (hasConflictingInnerColonInSingle) {
+  //   value = value.replace(CONFLICTING_INNER_COLONS_SINGLE, '__INNER_COLON__')
+  // }
+  // if (hasConflictingInnerColonInDouble) {
+  //   value = value.replace(CONFLICTING_INNER_COLONS_DOUBLE, '__INNER_COLON__')
+  // }
+  // console.log('CONFLICTING_INNER_COLONS_SINGLE', CONFLICTING_INNER_COLONS_SINGLE)
+  // console.log('CONFLICTING_INNER_COLONS_DOUBLE', CONFLICTING_INNER_COLONS_DOUBLE)
 
-  const inner = replaceDoubleQuotes(replaceCommas(value.replace(/^{|}$/g, '')))
+  /*
+  console.log('BEFORE', value)
+  console.log('───────────────────────────────')
+  /** */
+
+  const inner = replaceDoubleQuotes(
+    replaceCommas(
+      value.replace(/^{|}$/g, '')
+    )
+  )
   const kvs = inner.split(',').map((x) => x.trim())
-  // console.log('inner', inner)
-  // console.log('kvs', kvs)
-  const newObjectString = kvs.reduce((acc, curr, i) => {
-    // console.log('current key', curr)
+  /*
+  console.log('inner', inner)
+  console.log('kvs', kvs)
+  /** */
+  const splitter = ':'
+  const newObjectString = kvs.reduce((acc, c, i) => {
+    const curr = c.trim()
+    /*
+    console.log('curr', curr)
+    /** */
     const comma = (kvs.length - 1 === i) ? '' : ',\n'
     if (isObjectLike(curr)) {
       acc += `{` + formatObj(curr) + `}${comma}`
       return acc
     }
-    const parts = curr.trim().split(':')
-    // console.log('parts.length', parts.length)
-    if (parts.length !== 2) {
-      return acc
-    }
-    const k = parts[0].trim()
-    const v = cleanObjectString(parts[1].trim())
+
+    // const splitter = curr.match(/^([A-Z-a-z0-9]*)__INNER_COLON__/) ? '__INNER_COLON__' : ':'
+    const parts = curr.split(splitter)
+    /*
+    console.log('splitter', splitter)
+    console.log(`parts ${parts.length}`, parts)
+    /** */
+
+    // if (parts.length !== 2) {
+    //   return acc
+    // }
+
+    /* Pop off key */
+    const k = parts.shift().trim()
+    /* Join the rest of the parts */
+    const value = parts.join(splitter).trim()
+    
+    const v = cleanObjectString(value)
+    /*
+    console.log('New value', value)
+    console.log('Cleaned value', v)
+    /** */
       
     // console.log('v', v)
     acc += `${ensureWrap(k, '"')}: ${ensureWrap(v, '"')}${comma}`
@@ -136,7 +172,9 @@ function formatObj(value) {
     return acc
   }, '')
 
-  
+  /*
+  console.log('newObjectString', newObjectString)
+  /** */
   return newObjectString
 }
 
@@ -155,6 +193,11 @@ function convert(value) {
   const isNumber = Number(value)
   if (typeof isNumber === 'number' && !isNaN(isNumber)) {
     return isNumber
+  }
+
+  // remove double escaped quotes
+  if (value.indexOf('\\"') > -1) {
+    value = value.replace(/\\"/g, '\"') // .replace(/\\\"/g, '\"')
   }
 
   let cleaner
@@ -200,9 +243,14 @@ function convert(value) {
       if (isObjectLike(value) && value.indexOf(':') > -1) {
         // console.log('isObjectLike value', cleaner)
         const newObjectString = formatObj(cleaner || value)
+        if (!newObjectString) {
+          throw new Error('Could not parse object')
+        }
         // console.log('newObjectString', newObjectString)
         const objToTry =`{ ${newObjectString.replace(/,$/, '')} }`
-        // console.log('objToTry', objToTry)
+        /*
+        console.log('objToTry', objToTry)
+        /** */
         return parseJSON(objToTry)
       }
       /* Convert array looking string into values */

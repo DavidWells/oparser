@@ -1803,7 +1803,7 @@ test('Trailing commas wierd objects - parseValue', () => {
  * MISC
  ***********************************************************************************************************/
 
-test.skip('Weird ones', () => {
+test('Weird ones', () => {
   const one = parse("debug 1")
   assert.equal(one, {
     debug: true,
@@ -2330,6 +2330,75 @@ test('Parses extra escapes', () => {
       }
     ]
   })
+})
+
+const nested = `  components={[{
+    type: "content",
+    content: "Content here...\n\n<Builder\n  components={[{\n    type: \"content\",\n    content: \"Content here... woah nice\\n\\n<Builder\\n  components={[{ type: \\\"content\\\", content: \\\"Content here... deeeeep\\\" }]}\\n/>\"\n  }]}\n/>"
+  }]}`
+
+const nestedTwo = `  components={[{
+    type: "content",
+    content: "Content here...\n\n<Builder\n  components={[{\n    type: \"content\",\n    content: \"Content here... woah nice\\n\\n<Builder\\n  components={[{ type: \"content\", content: \"Content here... deeeeep\" }]}\\n/>\"\n  }]}\n/>"
+  }]}`
+
+const nestedThree = `  components={[{
+    type: "content",
+    content: "Content here...\n\n<Builder\n  components={[{\n    type: 'content',\n    content: 'Content here... woah nice\\n\\n<Builder\\n  components={[{ type: 'content', content: 'Content here... deeeeep' }]}\\n/>'\n  }]}\n/>"
+  }]}`
+
+test('Parses super nested', () => {
+  const answer = {
+  components: [
+      {
+        type: 'content',
+        content: 'Content here...\n' +
+          '\n' +
+          '<Builder\n' +
+          '  components={[{\n' +
+          '    type: "content",\n' +
+          '    content: "Content here... woah nice\n' +
+          '\n' +
+          '<Builder\n' +
+          '  components={[{ type: "content", content: "Content here... deeeeep" }]}\n' +
+          '/>"\n' +
+          '  }]}\n' +
+          '/>'
+      }
+    ]
+  }
+  const value = parse(nested)
+  // console.log('value', value)
+  // console.log(value.components[0].content)
+  // console.log(answer.components[0].content)
+
+  assert.equal(value, answer, 'value')
+
+  const valueTwo = parse(nestedTwo)
+  // console.log('value', value)
+  assert.equal(valueTwo, answer, 'valueTwo')
+
+  const valueThree = parse(nestedThree)
+  //console.log('valueThree', valueThree)
+  assert.equal(valueThree, {
+  components: [
+    {
+      type: 'content',
+      content: 'Content here...\n' +
+        '\n' +
+        '<Builder\n' +
+        '  components={[{\n' +
+        "    type: 'content',\n" +
+        "    content: 'Content here... woah nice\n" +
+        '\n' +
+        '<Builder\n' +
+        "  components={[{ type: 'content', content: 'Content here... deeeeep' }]}\n" +
+        "/>'\n" +
+        '  }]}\n' +
+        '/>'
+    }
+  ]
+}, 'nestedThree')
 })
 
 test('nested jsons three', () => {

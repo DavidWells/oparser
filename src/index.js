@@ -134,10 +134,6 @@ function parse(s) {
       .replace(LINEBREAKS_IN_DOUBLE_QUOTE_RE, `${LINE_BREAK}\n`)
   }
 
-  const hasWeirdChars = str.indexOf('\\"') > -1
-  if (hasWeirdChars) {
-    str = str.replace(/\\"/g, '\"')
-  }
   // console.log('pre pass', str)
   
   const hasInnerSpacesInSinglesQuote = SPACES_IN_SINGLE_QUOTE_RE.test(str)
