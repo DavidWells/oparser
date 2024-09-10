@@ -21,10 +21,10 @@
     "release:minor": "npm version minor && npm publish",
     "release:major": "npm version major && npm publish"
   },
-  "dependencies": {
-    "json-alexander": "^0.1.11"
-  },
   "devDependencies": {
     "uvu": "^0.5.1"
+  },
+  "dependencies": {
+    "json-alexander": "^0.1.13"
   }
 }
