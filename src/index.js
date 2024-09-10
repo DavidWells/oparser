@@ -1,5 +1,6 @@
 const { convert } = require('./utils/convert') 
 const { ensureWrap } = require('./utils/ensure-wrap')
+const { replaceInnerCharPattern } = require('./utils/replace-inner')
 
 const WHITE_SPACE = /[\s\n\r]/
 const SURROUNDING_QUOTES = /^("|'|`)|("|'|`)$/g
@@ -41,15 +42,6 @@ function removeTempCharacters(val, rep) {
       .replace(/_SLASH_SLASH_/g, `//`)
   }
   return val
-}
-
-function replaceInnerCharPattern(char = '\\s', open, close, repeat = 0, flags) {
-  // og /\s(?=(?:(?:[^"]*(?:")){2})*[^"]*(?:")[^"]*$)/g
-  const repeatVal = (repeat) ? `{${repeat}}` : ''
-  // const o = (allSpace) ? '' : open
-  const o = open
-  const f = flags || 'g'
-  return new RegExp(`${char}(?=(?:(?:[^${open}]*(?:${open}))${repeatVal})*[^${o}]*(?:${close})[^${close}]*$)`, f)
 }
 
 const space = ' '
@@ -232,6 +224,7 @@ function parse(s) {
   /* Conflicting inner '//' */
   const hasConflictingSlashesInSingle = CONFLICTING_SLASHSLASH_IN_SINGLE.test(str)
   const hasConflictingSlashesInDouble = CONFLICTING_SLASHSLASH_IN_DOUBLE.test(str)
+  /* conflicting inner JSON */
 
   /*
   console.log('Conflicts')
@@ -244,6 +237,7 @@ function parse(s) {
   console.log('hasConflictingSlashesInSingle', hasConflictingSlashesInSingle)
   console.log('hasConflictingSlashesInDouble', hasConflictingSlashesInDouble)
   /** */
+
 
   // const hasConflictingParen = CONFLICTING_PARENS_IN_SINGLE.test(str)
   // console.log('hasConflictingParen', hasConflictingParen)

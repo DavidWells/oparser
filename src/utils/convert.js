@@ -1,5 +1,8 @@
 const { parseJSON } = require('json-alexander')
 const { ensureWrap } = require('./ensure-wrap')
+const { replaceInnerCharPattern } = require('./replace-inner')
+
+const COMMA = '_COMMA_'
 
 // const ARRAY_REGEX = /^\[(.*)\]$/
 const ARRAY_REGEX = /^\s*\[([\s\S]*?)\]\s*$/
@@ -13,7 +16,7 @@ const TRAILING_OBJECT_COMMAS = /(?:,[^\S]*)+(})(,*)\s*$/
 
 const TRAILING_ARRAY_COMMAS_GLOBAL = /(?:,+[^\S]*)+?](,)*\s*/gm
 
-const TRIM_INNER_TRAILING_OBJECT_COMMA = /(,*[^\S]*)*?}\s*/m
+const TRIM_INNER_TRAILING_OBJECT_COMMA = /(,+[^\S]*)*?}\s*/m
   // // Remove trailing object commas
   // value = value.replace(/(?:,*[^\S]*)*?}(,)*/gm, '}$1')
   // // Remove trailing array commas
@@ -30,28 +33,110 @@ function isObjectLike(str) {
   return Boolean(OBJECT_REGEX.test(str))
 }
 
+function replaceDoubleQuotes(input) {
+  return replaceBetweenMarkers(input, /"/g, '__inner_dbl_quote__')
+}
+
+function replaceCommas(input) {
+  return replaceBetweenMarkers(input, /,/g, COMMA)
+}
+
+function replaceBetweenMarkers(input, pattern, replace) {
+  // Match content between __OPEN_JSON__OBJECT__ and __CLOSE_JSON__OBJECT__
+  const regexMarkers = /(__OPEN_JSON__OBJECT__)([\s\S]*?)(__CLOSE_JSON__OBJECT__)/g
+  
+  // Replace the double quotes within the markers
+  const updatedString = input.replace(regexMarkers, (match, openMarker, content, closeMarker) => {
+    // Replace all double quotes in the content between the markers
+    const updatedContent = content.replace(pattern, replace)
+    
+    // Return the full string with markers and updated content
+    return `${openMarker}${updatedContent}${closeMarker}`
+  })
+
+  return updatedString
+}
+
+const CONFLICTING_INNER_COLONS_SINGLE = replaceInnerCharPattern(":", `'`, `'`, 2)
+const CONFLICTING_INNER_COLONS_DOUBLE = replaceInnerCharPattern(":", `"`, `"`, 2)
+
+const CONFLICTING_INNER_JSON_IN_SINGLE = replaceInnerCharPattern("{\\[{", `'`, `'`, 2)
+const CONFLICTING_INNER_JSON_IN_DOUBLE = replaceInnerCharPattern("{\\[{", `"`, `"`, 2)
+
+const CONFLICTING_INNER_JSON_CLOSE_IN_DOUBLE = replaceInnerCharPattern("}\\]}", `"`, `"`, 2)
+// const CONFLICTING_INNER_JSON_CLOSE_IN_SINGLE = replaceInnerCharPattern("}\\]}", `'`, `'`, 2)
+
+function cleanObjectString(value) {
+  return value
+      .replace(/\n/g, '\\n')
+      .replace(/__INNER_COLON__/g, ':')
+      .replace(/_COMMA_/g, ',')
+      // .replace(/__EQ__/g, '=')
+      .replace(/__inner_dbl_quote__/g, '\\"')
+      .replace(/__OPEN_JSON__OBJECT__/g, '{[{')
+      .replace(/__CLOSE_JSON__OBJECT__/g, '}]}')
+}
+
+// const CONFLICTING_CURLIES_IN_SINGLE = replaceInnerCharPattern("}", `'`, `'`, 2)
+// const CONFLICTING_CURLIES_IN_DOUBLE = replaceInnerCharPattern("}", `\\[`, `\\]`, 1)
+
 function formatObj(value) {
-  const inner = value.replace(/^{|}$/g, '')
+
+  const hasConflictingInnerColonInSingle = CONFLICTING_INNER_COLONS_SINGLE.test(value)
+  const hasConflictingInnerColonInDouble = CONFLICTING_INNER_COLONS_DOUBLE.test(value)
+
+  const hasConflictingInnerJsonInSingle = CONFLICTING_INNER_JSON_IN_SINGLE.test(value)
+  const hasConflictingInnerJsonInDouble = CONFLICTING_INNER_JSON_IN_DOUBLE.test(value)
+
+  // const hasConflictingCurliesInSingle = CONFLICTING_CURLIES_IN_SINGLE.test(value)
+  // const hasConflictingCurliesInDouble = CONFLICTING_CURLIES_IN_DOUBLE.test(value)
+
+  const hasConflictingJsonClose = CONFLICTING_INNER_JSON_CLOSE_IN_DOUBLE.test(value)
+
+  if (hasConflictingInnerJsonInDouble) {
+    value = value.replace(CONFLICTING_INNER_JSON_IN_DOUBLE, '__OPEN_JSON__OBJECT__')
+  }
+
+  if (hasConflictingJsonClose) {
+    value = value.replace(CONFLICTING_INNER_JSON_CLOSE_IN_DOUBLE, '__CLOSE_JSON__OBJECT__')
+  }
+
+  if (hasConflictingInnerColonInSingle) {
+    value = value.replace(CONFLICTING_INNER_COLONS_SINGLE, '__INNER_COLON__')
+  }
+  if (hasConflictingInnerColonInDouble) {
+    value = value.replace(CONFLICTING_INNER_COLONS_DOUBLE, '__INNER_COLON__')
+  }
+
+  // console.log('BEFORE', value)
+  // console.log('───────────────────────────────')
+
+  const inner = replaceDoubleQuotes(replaceCommas(value.replace(/^{|}$/g, '')))
   const kvs = inner.split(',').map((x) => x.trim())
   // console.log('inner', inner)
   // console.log('kvs', kvs)
   const newObjectString = kvs.reduce((acc, curr, i) => {
+    // console.log('current key', curr)
     const comma = (kvs.length - 1 === i) ? '' : ',\n'
     if (isObjectLike(curr)) {
       acc += `{` + formatObj(curr) + `}${comma}`
       return acc
     }
     const parts = curr.trim().split(':')
+    // console.log('parts.length', parts.length)
     if (parts.length !== 2) {
       return acc
     }
     const k = parts[0].trim()
-    const v = parts[1].trim()
+    const v = cleanObjectString(parts[1].trim())
+      
     // console.log('v', v)
     acc += `${ensureWrap(k, '"')}: ${ensureWrap(v, '"')}${comma}`
     // console.log('parts', parts)
     return acc
   }, '')
+
+  
   return newObjectString
 }
 
@@ -113,8 +198,9 @@ function convert(value) {
 
       /* Convert object looking string into values */
       if (isObjectLike(value) && value.indexOf(':') > -1) {
-        // console.log('value', cleaner)
+        // console.log('isObjectLike value', cleaner)
         const newObjectString = formatObj(cleaner || value)
+        // console.log('newObjectString', newObjectString)
         const objToTry =`{ ${newObjectString.replace(/,$/, '')} }`
         // console.log('objToTry', objToTry)
         return parseJSON(objToTry)
@@ -125,7 +211,9 @@ function convert(value) {
         // console.log('try array', inner)
 
         if (inner && inner[1]) {
-          const composeValue = inner[1]
+          let innerValue = inner[1]
+
+          const composeValue = innerValue
             .replace(TRAILING_COMMAS, '') // remove dangling commas JSON alt MATCH_DANGLING_COMMAS /}(,[^}]*?)]}?$/
             .split(',')
             .reduce((acc, curr) => {
@@ -203,5 +291,6 @@ function convert(value) {
 module.exports = {
   convert,
   isObjectLike,
-  isArrayLike
+  isArrayLike,
+  COMMA
 }
