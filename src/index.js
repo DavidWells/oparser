@@ -72,7 +72,8 @@ const CONFLICTING_HASH_IN_DOUBLE = replaceInnerCharPattern("#", `"`, `"`, 2)
 const CONFLICTING_SLASHSLASH_IN_SINGLE = replaceInnerCharPattern("\\/\\/", `'`, `'`, 2)
 const CONFLICTING_SLASHSLASH_IN_DOUBLE = replaceInnerCharPattern("\\/\\/", `"`, `"`, 2)
 
-const ASYNC_ARROW = /(?:async\s+)?\s?\(([\s\S]*)\)\s?(=>|_≡►)\s*(?:(?:[^}{]+|\{(?:[^}{]+|\{[^}{]*\})*\})*(?:\s?\(.*\)\s?\)\s?)?)?(?:\;)?/
+// const ASYNC_ARROW = /(?:async\s+)?\s?\(([\s\S]*)\)\s?(=>|_≡►)\s*(?:(?:[^}{]+|\{(?:[^}{]+|\{[^}{]*\})*\})*(?:\s?\(.*\)\s?\)\s?)?)?(?:\;)?/
+const ASYNC_ARROW = /(?:async\s+)?\s?\(([\s\S]*)\)\s?(=>|_≡►)\s*{?/
 /*
 console.log('Patterns')
 console.log('SPACES_IN_SINGLE_QUOTE_RE', SPACES_IN_SINGLE_QUOTE_RE)
@@ -439,7 +440,7 @@ function parse(s) {
           save(bufferKey, preFormat(trimBrackets(bufferValue, '{', '}')), 'NOT_OBJECT_LIKE')
           continue;
         }
-
+        // console.log('hang')
         const theOpenQuote = START_WITH_PAREN.test(bufferValue) && !ASYNC_ARROW.test(bufferValue) ? '(' : openQuote
         const newBalance = isBalanced(bufferValue, theOpenQuote)
 
@@ -583,7 +584,9 @@ function preFormat(val, quoteType) {
   // console.log('preFormat value 2', value)
 
   if (value.match(ASYNC_ARROW)) {
+    // console.log('try', value)
     value = isBalanced(value, '{') ? removeSurroundingBrackets(value) : removeSurroundingBrackets(value + '}')
+    // console.log('value', value)
   } else if (value.match(/^{\s*\(([\s\S]+?)\)\s*}$/)) {
     // JSX style tag value={( stuff )}
     value = value.replace(/^{\s*\(/, '').replace(/\)\s*}$/, '')
@@ -597,6 +600,7 @@ function preFormat(val, quoteType) {
   else if (value.match(/^{\s*\[\s*[^:]*\s*\]\s*\}/)) {
     // Match { [ one, two ,3,4 ] }
     value = removeSurroundingBrackets(value)
+    // console.log('preFormat value 2', value)
   }
   // If matches {` stuff `} & {[ stuff ]}
   else if (value.match(/^{(?:`|\[)([\s\S]*?)(?:`|\])}$/)) {
@@ -605,11 +609,13 @@ function preFormat(val, quoteType) {
   // If matches JSX tag {<html>} & {(<html>)} https://regex101.com/r/KSARnK/1
   else if (value.match(/^{\s*\(?\s*<([a-zA-Z1-6]+)\b([^>]*)>*(?:>([\s\S]*?)<\/\1>|\s?\/?>)\s*\)?\s*}$/)) {
     value = removeSurroundingBrackets(value)
+    
   }
   // console.log('preFormat value 3', value)
 
   /* Check if remaining value is surrounded by quotes */
   const surroundingQuotes = value.match(SURROUNDING_QUOTES) || []
+  // console.log('surroundingQuotes', surroundingQuotes)
   const hasSurroundingQuotes = surroundingQuotes.length === 2 && (surroundingQuotes[0] === surroundingQuotes[1])
   // console.log('hasSurroundingQuotes', hasSurroundingQuotes)
 
