@@ -340,5 +340,6 @@ module.exports = {
   convert,
   isObjectLike,
   isArrayLike,
+  parseJSON,
   COMMA
 }

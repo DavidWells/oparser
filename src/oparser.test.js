@@ -1,3 +1,5 @@
+const fs = require('fs')
+const path = require('path')
 const { test } = require('uvu') 
 const assert = require('uvu/assert')
 const { parse, parseValue } = require('./')
@@ -1145,6 +1147,7 @@ tester={{
   </span>
 }}
   `)
+  // console.log('x', x)
   assert.equal(x,
     {
       tester: `
@@ -2958,6 +2961,76 @@ assert.equal(val.planets, {
 	]
 })
 assert.equal(val.cool, true)
+})
+
+
+test('Log test', () => {
+  const logTest = `
+duration_ms=1266.1819686777117 main=true http.ip_address=92.21.101.252 instance.id=api-1 instance.memory_mb=12336
+instance.cpu_count=4 instance.type=t3.small http.request.method=GET http.request.path=/api/categories/substantia-trado
+http.route=/api/categories/:slug http.request.body.size=293364 http.request.header.content_type=application/xml
+user_agent.original="Mozilla/5.0 (X11; Linux i686 AppleWebKit/535.1.2 (KHTML, like Gecko) Chrome/39.0.826.0 Safari/535.1.2" user_agent.device=phone
+user_agent.os=Windows user_agent.browser=Edge user_agent.browser_version=3.0 url.scheme=https url.host=api-service.com service.name=api-service
+service.version=1.0.0 build.id=1234567890 go.version=go1.23.2 rails.version=7.2.1.1 service.environment=production service.team=api-team
+service.slack_channel=#api-alerts service.build.deployment.at=2024-10-14T19:47:38Z
+service.build.diff_url=https://github.com/your-company/api-service/compare/c9d9380..05e5736
+service.build.pull_request_url=https://github.com/your-company/api-service/pull/123
+service.build.git_hash=05e5736 service.build.deployment.user=keanu.reeves@your-company.com
+service.build.deployment.trigger=manual container.id=1234567890 container.name=api-service-1234567890 cloud.availability_zone=us-east-1
+cloud.region=us-east-1 k8s.pod.name=api-service-1234567890 k8s.cluster.name=api-service-cluster feature_flag.auth_v2=true
+http.response.status_code=401 user.id=Samanta27@gmail.com user.type=vip user.auth_method=sso-google user.team_id=team-1
+`
+
+  const val = parse(logTest)
+  // console.log('val', val)
+
+  assert.equal(val, {
+    duration_ms: 1266.1819686777117,
+    main: true,
+    'http.ip_address': '92.21.101.252',
+    'instance.id': 'api-1',
+    'instance.memory_mb': 12336,
+    'instance.cpu_count': 4,
+    'instance.type': 't3.small',
+    'http.request.method': 'GET',
+    'http.request.path': '/api/categories/substantia-trado',
+    'http.route': '/api/categories/:slug',
+    'http.request.body.size': 293364,
+    'http.request.header.content_type': 'application/xml',
+    'user_agent.original': 'Mozilla/5.0 (X11; Linux i686 AppleWebKit/535.1.2 (KHTML, like Gecko) Chrome/39.0.826.0 Safari/535.1.2',
+    'user_agent.device': 'phone',
+    'user_agent.os': 'Windows',
+    'user_agent.browser': 'Edge',
+    'user_agent.browser_version': 3,
+    'url.scheme': 'https',
+    'url.host': 'api-service.com',
+    'service.name': 'api-service',
+    'service.version': '1.0.0',
+    'build.id': 1234567890,
+    'go.version': 'go1.23.2',
+    'rails.version': '7.2.1.1',
+    'service.environment': 'production',
+    'service.team': 'api-team',
+    'service.slack_channel': '#api-alerts',
+    'service.build.deployment.at': '2024-10-14T19:47:38Z',
+    'service.build.diff_url': 'https://github.com/your-company/api-service/compare/c9d9380..05e5736',
+    'service.build.pull_request_url': 'https://github.com/your-company/api-service/pull/123',
+    'service.build.git_hash': Infinity,
+    'service.build.deployment.user': 'keanu.reeves@your-company.com',
+    'service.build.deployment.trigger': 'manual',
+    'container.id': 1234567890,
+    'container.name': 'api-service-1234567890',
+    'cloud.availability_zone': 'us-east-1',
+    'cloud.region': 'us-east-1',
+    'k8s.pod.name': 'api-service-1234567890',
+    'k8s.cluster.name': 'api-service-cluster',
+    'feature_flag.auth_v2': true,
+    'http.response.status_code': 401,
+    'user.id': 'Samanta27@gmail.com',
+    'user.type': 'vip',
+    'user.auth_method': 'sso-google',
+    'user.team_id': 'team-1'
+  })
 })
 
 test.run()
