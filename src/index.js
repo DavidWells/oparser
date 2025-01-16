@@ -1,11 +1,12 @@
-const { convert } = require('./utils/convert') 
+const { convert, isObjectLike, isArrayLike, parseJSON } = require('./utils/convert') 
 const { ensureWrap } = require('./utils/ensure-wrap')
 const { replaceInnerCharPattern } = require('./utils/replace-inner')
 
 const WHITE_SPACE = /[\s\n\r]/
 const SURROUNDING_QUOTES = /^("|'|`)|("|'|`)$/g
+// const SURROUNDING_QUOTES = /^("|'|`)(?:[^\1])*(\1)$/g
 const VALID_KEY_CHAR = /^[A-Za-z0-9_]/
-const VALID_VALUE_CHAR = /(.*)/
+const VALID_VALUE_CHAR = /(.+)/
 const TRAILING_COMMAS = /,+$/
 const NOT_OBJECT_LIKE = /^{[^:,]*}/
 const START_WITH_PAREN = /^\s*\(/
@@ -47,6 +48,7 @@ function removeTempCharacters(val, rep) {
 const space = ' '
 // bob='co ol' steve='c ool' --> add temp spaces
 const SPACES_IN_SINGLE_QUOTE_RE = replaceInnerCharPattern(space, "'", "'", 2)
+// console.log('SPACES_IN_SINGLE_QUOTE_RE', SPACES_IN_SINGLE_QUOTE_RE)
 // bob="co ol" steve="c ool" --> add temp spaces
 const SPACES_IN_DOUBLE_QUOTE_RE = replaceInnerCharPattern(space, '"', '"', 2)
 
@@ -72,8 +74,12 @@ const CONFLICTING_HASH_IN_DOUBLE = replaceInnerCharPattern("#", `"`, `"`, 2)
 const CONFLICTING_SLASHSLASH_IN_SINGLE = replaceInnerCharPattern("\\/\\/", `'`, `'`, 2)
 const CONFLICTING_SLASHSLASH_IN_DOUBLE = replaceInnerCharPattern("\\/\\/", `"`, `"`, 2)
 
-// const ASYNC_ARROW = /(?:async\s+)?\s?\(([\s\S]*)\)\s?(=>|_≡►)\s*(?:(?:[^}{]+|\{(?:[^}{]+|\{[^}{]*\})*\})*(?:\s?\(.*\)\s?\)\s?)?)?(?:\;)?/
-const ASYNC_ARROW = /(?:async\s+)?\s?\(([\s\S]*)\)\s?(=>|_≡►)\s*{?/
+// const ASYNC_ARROW_FULL_FN = /(?:async\s+)?\s?\(([\s\S]*)\)\s?(=>|_≡►)\s*(?:(?:[^}{]+|\{(?:[^}{]+|\{[^}{]*\})*\})*(?:\s?\(.*\)\s?\)\s?)?)?(?:\;)?/
+// https://regex101.com/r/XO8rRl/1
+// const ASYNC_ARROW = /(?:async\s+)?\s?\(([\s\S]*)\)\s?(=>|_≡►)\s*{?/
+// https://regex101.com/r/Es4r3P/1
+const ASYNC_ARROW = /(?:async\s+)?\s?\(([\s\S]{0,1000}?)\)\s?(=>|_≡►)\s*{?/
+// const ASYNC_ARROW = /(?:async\s+)?\s?\(([^\)]*)\)\s?(=>|_≡►)\s*{?/
 /*
 console.log('Patterns')
 console.log('SPACES_IN_SINGLE_QUOTE_RE', SPACES_IN_SINGLE_QUOTE_RE)
@@ -90,6 +96,8 @@ console.log('CONFLICTING_SLASHSLASH_IN_DOUBLE', CONFLICTING_SLASHSLASH_IN_DOUBLE
 // console.log('DOUBLE_IN_SINGLE_QUOTE_RE', DOUBLE_IN_SINGLE_QUOTE_RE)
 // console.log('SINGLE_IN_DOUBLE_QUOTE_RE', SINGLE_IN_DOUBLE_QUOTE_RE)
 /** */
+
+const DEBUG = false
 
 /**
  * Parse config
@@ -117,16 +125,26 @@ function parse(s) {
   if (str.length === 1) {
     return { [str]: true }
   }
+
+  // console.log(str.length)
+  // return
+
+  if (str.length > 20000) {
+    return { error: 'String is too long ' + str.length }
+  }
+
   /*
-  console.log('>> start str')
-  console.log(str)
-  console.log('───────────────────────────────')
+  if (DEBUG) {
+    console.log('>> start str')
+    console.log(str)
+    console.log('───────────────────────────────')
+  }
   /** */
 
   const isMultiline = str.indexOf('\n') > -1
   if (isMultiline) {
     str = str
-      /* fix unblanced inner single quote conflicts https://regex101.com/r/kLNXg8/1 */
+      /* fix unbalanced inner single quote conflicts https://regex101.com/r/kLNXg8/1 */
       .replace(/(=)(')([^\n']*)(')(\s*\n\s*)(?=(?:(?:[^']*(?:')){2})*[^']*(?:')[^']*$)/g, `$1${OUTER_SINGLE_QUOTE}$3${OUTER_SINGLE_QUOTE}$5`)
       .replace(/(=)(")([^\n']*)(")(\s*\n\s*)(?=(?:(?:[^"]*(?:")){2})*[^"]*(?:")[^"]*$)/g, `$1${OUTER_DOUBLE_QUOTE}$3${OUTER_DOUBLE_QUOTE}$5`)
       /* Replace spaces in single quotes with temporary spaces */
@@ -135,10 +153,21 @@ function parse(s) {
       .replace(LINEBREAKS_IN_DOUBLE_QUOTE_RE, `${LINE_BREAK}\n`)
   }
 
-  // console.log('pre pass', str)
+  /*
+  if (DEBUG) {
+    console.log('pre pass', str)
+    console.log('end prepass')
+  }
+  /** */
   
   const hasInnerSpacesInSinglesQuote = SPACES_IN_SINGLE_QUOTE_RE.test(str)
   SPACES_IN_SINGLE_QUOTE_RE.lastIndex = 0 // Reset regex pattern due to g flag https://bit.ly/2UCNhJz
+
+  /*
+  if (DEBUG) {
+    console.log('end hasInnerSpacesInSinglesQuote', hasInnerSpacesInSinglesQuote)
+  }
+  /** */
 
   // const hasInnerDoubleInSinglesQuote = DOUBLE_IN_SINGLE_QUOTE_RE.test(str)
   // DOUBLE_IN_SINGLE_QUOTE_RE.lastIndex = 0 // Reset regex pattern due to g flag https://bit.ly/2UCNhJz
@@ -176,6 +205,12 @@ function parse(s) {
       /* Fix Single ' space key=val */ 
       str = str.replace(/_S_Q_ ([A-Za-z0-9_]*=)/, "' $1")
     }
+
+    /*
+    if (DEBUG) {
+      console.log('end hasInnerSpacesInSinglesQuote fix')
+    }
+    /** */
   }
 
   /*
@@ -186,6 +221,11 @@ function parse(s) {
 
   /* Fix conflicting double quotes bob="inner "quote" conflict" steve='cool' */
   const hasInnerSpacesInDoubleQuote = SPACES_IN_DOUBLE_QUOTE_RE.test(str)
+  /*
+  if (DEBUG) {
+    console.log('end hasInnerSpacesInDoubleQuote', hasInnerSpacesInDoubleQuote)
+  }
+  /** */
   if (hasInnerSpacesInDoubleQuote) {
     const DOUBLE_QUOTES_STAR_PATTERN = replaceInnerCharPattern('\\*', '"', '"', 2)
     // console.log('DOUBLE_QUOTES_STAR_PATTERN', DOUBLE_QUOTES_STAR_PATTERN)
@@ -207,6 +247,11 @@ function parse(s) {
       /* Fix Double " space key=val */ 
       str = str.replace(/_D_Q_ ([A-Za-z0-9_]*=)/, '" $1')
     }
+    /*
+    if (DEBUG) {
+      console.log('end hasInnerSpacesInDoubleQuote fix')
+    }
+    /** */
   }
   
   /*
@@ -607,9 +652,10 @@ function preFormat(val, quoteType) {
     value = removeSurroundingBrackets(value)
   } 
   // If matches JSX tag {<html>} & {(<html>)} https://regex101.com/r/KSARnK/1
-  else if (value.match(/^{\s*\(?\s*<([a-zA-Z1-6]+)\b([^>]*)>*(?:>([\s\S]*?)<\/\1>|\s?\/?>)\s*\)?\s*}$/)) {
+  else if (value.match(/^{\s*\(?\s*<([a-zA-Z1-6]+)\b([^>]*)>*(?:>([\s\S]{0,4000}?)<\/\1>|\s?\/?>)\s*\)?\s*}$/)) {
+  // else if (value.match(/^{\s*\(?\s*<([a-zA-Z1-6]+)\b([^>]*)>*(?:>([\s\S]*?)<\/\1>|\s?\/?>)\s*\)?\s*}$/)) {
+  // else if (isJSXElement(value)) { // Safer JSX check
     value = removeSurroundingBrackets(value)
-    
   }
   // console.log('preFormat value 3', value)
 
@@ -622,6 +668,32 @@ function preFormat(val, quoteType) {
   return hasSurroundingQuotes ? value.replace(SURROUNDING_QUOTES, '') : convert(value)
 }
 
+const JSX_OPENING = /^{\s*\(?\s*</;  // Match opening {< or {(
+const JSX_TAG_NAME = /([a-zA-Z][a-zA-Z0-9_-]*)/; // Match valid tag names 
+const JSX_CLOSING = />|\/>/; // Match > or />
+const JSX_END = /\s*\)?\s*}$/; // Match ending )} or }
+
+function isJSXElement(value) {
+  // Early exit if doesn't have basic JSX structure
+  if (!JSX_OPENING.test(value)) return false;
+  
+  // Get the tag name from start of element
+  const tagMatch = value.match(JSX_TAG_NAME);
+  if (!tagMatch) return false;
+  
+  const tagName = tagMatch[1];
+  
+  // Look for matching closing tag
+  // const closeTag = new RegExp(`</${tagName}>`);
+  
+  // Either self-closing or has matching end tag
+  return (
+    // Self-closing tag case: <tag/>}
+    (value.match(JSX_CLOSING) && value.match(JSX_END)) ||
+    // Full tag case: <tag>...</tag>}  
+    (value.includes(`</${tagName}>`) && value.match(JSX_END))
+  );
+}
 
 function removeSurroundingBrackets(val) {
   // console.log('val', val)
@@ -670,29 +742,6 @@ function trimBrackets(value, open = '', close = '') {
   return value
 }
 
-// function repeatStringNumTimes(string, times) {
-//   var repeatedString = "";
-//   while (times > 0) {
-//     repeatedString += string;
-//     times--;
-//   }
-//   return repeatedString;
-// }
-
-// function replacer(match, open, content, close, offset) {
-//   console.log(arguments)
-//   return repeatStringNumTimes(CURLY_OPEN, open.length) + content + repeatStringNumTimes(CURLY_CLOSE, close.length)
-//   // return (offset === 0 ? "FIRSRT" : "") + match
-// }
-
-// function replaceCloseCurly(match, open, _, extra) {
-//   console.log(arguments)
-//   console.log('close', open)
-//   console.log('extra', extra)
-//   return repeatStringNumTimes(CURLY_CLOSE, open.length) + (extra || '')
-//   // return (offset === 0 ? "FIRSRT" : "") + match
-// }
-
 /**
  * Verify brackets are balanced
  * @param  {string}  str - string with code
@@ -736,3 +785,26 @@ module.exports = {
   parseValue,
   options
 }
+
+// function repeatStringNumTimes(string, times) {
+//   var repeatedString = "";
+//   while (times > 0) {
+//     repeatedString += string;
+//     times--;
+//   }
+//   return repeatedString;
+// }
+
+// function replacer(match, open, content, close, offset) {
+//   console.log(arguments)
+//   return repeatStringNumTimes(CURLY_OPEN, open.length) + content + repeatStringNumTimes(CURLY_CLOSE, close.length)
+//   // return (offset === 0 ? "FIRSRT" : "") + match
+// }
+
+// function replaceCloseCurly(match, open, _, extra) {
+//   console.log(arguments)
+//   console.log('close', open)
+//   console.log('extra', extra)
+//   return repeatStringNumTimes(CURLY_CLOSE, open.length) + (extra || '')
+//   // return (offset === 0 ? "FIRSRT" : "") + match
+// }
