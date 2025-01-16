@@ -130,7 +130,7 @@ function parse(s) {
   // return
 
   if (str.length > 20000) {
-    return { error: 'String is too long ' + str.length }
+    throw new Error(`String is too long at ${str.length} characters. Max length is 20000 characters.`)
   }
 
   /*
