@@ -1,0 +1,188 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "John Doe",
+      "email": "john.doe@example.com",
+      "roles": ["admin", "editor"],
+      "profile": {
+        "age": 30,
+        "address": {
+          "street": "123 Main St",
+          "city": "Springfield",
+          "state": "IL",
+          "zip": "62704"
+        },
+        "phoneNumbers": ["123-456-7890", "987-654-3210"],
+        "preferences": {
+          "language": "English",
+          "timezone": "CST"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Jane Smith",
+      "email": "jane.smith@example.com",
+      "roles": ["user"],
+      "profile": {
+        "age": 25,
+        "address": {
+          "street": "456 Elm St",
+          "city": "Portland",
+          "state": "OR",
+          "zip": "97203"
+        },
+        "phoneNumbers": ["234-567-8901"],
+        "preferences": {
+          "language": "French",
+          "timezone": "PST"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Jane Smith",
+      "email": "jane.smith@example.com",
+      "roles": ["user"],
+      "profile": {
+        "age": 25,
+        "address": {
+          "street": "456 Elm St",
+          "city": "Portland",
+          "state": "OR",
+          "zip": "97203"
+        },
+        "phoneNumbers": ["234-567-8901"],
+        "preferences": {
+          "language": "French",
+          "timezone": "PST"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Jane Smith",
+      "email": "jane.smith@example.com",
+      "roles": ["user"],
+      "profile": {
+        "age": 25,
+        "address": {
+          "street": "456 Elm St",
+          "city": "Portland",
+          "state": "OR",
+          "zip": "97203"
+        },
+        "phoneNumbers": ["234-567-8901"],
+        "preferences": {
+          "language": "French",
+          "timezone": "PST"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Jane Smith",
+      "email": "jane.smith@example.com",
+      "roles": ["user"],
+      "profile": {
+        "age": 25,
+        "address": {
+          "street": "456 Elm St",
+          "city": "Portland",
+          "state": "OR",
+          "zip": "97203"
+        },
+        "phoneNumbers": ["234-567-8901"],
+        "preferences": {
+          "language": "French",
+          "timezone": "PST"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Jane Smith",
+      "email": "jane.scom",
+      "roles": ["user"],
+      "profile": {
+        "age": 25,
+        "address": {
+          "street": "456 Elm St"
+        }
+      }
+    }
+  ],
+  "settings": {
+    "theme": "dark",
+    "notifications": {
+      "email": true,
+      "sms": false,
+      "push": true
+    },
+    "privacy": {
+      "shareLocation": false,
+      "shareActivityStatus": true
+    }
+  },
+  "analytics": {
+    "userActivity": [
+      {
+        "userId": 1,
+        "date": "2023-12-31",
+        "actions": [
+          {
+            "type": "login",
+            "timestamp": "2023-12-31T08:30:00Z"
+          },
+          {
+            "type": "updateProfile",
+            "timestamp": "2023-12-31T09:00:00Z"
+          }
+        ]
+      },
+      {
+        "userId": 2,
+        "date": "2023-12-31",
+        "actions": [
+          {
+            "type": "signup",
+            "timestamp": "2023-12-31T10:00:00Z"
+          },
+          {
+            "type": "purchase",
+            "timestamp": "2023-12-31T11:00:00Z",
+            "details": {
+              "item": "Premium Subscription",
+              "amount": 29.99
+            }
+          }
+        ]
+      }
+    ],
+    "systemLogs": [
+      {
+        "id": "log1",
+        "date": "2023-12-31",
+        "message": "System started",
+        "severity": "info"
+      },
+      {
+        "id": "log2",
+        "date": "2023-12-31",
+        "message": "Error connecting to database",
+        "severity": "error"
+      }
+    ]
+  },
+  "features": {
+    "beta": [
+      "new-dashboard",
+      "experimental-analytics"
+    ],
+    "live": [
+      "user-messaging",
+      "notifications"
+    ]
+  }
+}
