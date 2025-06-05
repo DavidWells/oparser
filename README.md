@@ -181,3 +181,7 @@ See [`/src/oparser.test.js`](https://github.com/DavidWells/oparser/blob/master/s
 ## Note
 
 This package uses regular expressions. Beware of [ReDoS](https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS) if using this package on the server.
+
+## Alt approaches
+
+- https://github.com/nepsilon/search-query-parser
