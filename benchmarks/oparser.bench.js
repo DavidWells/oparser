@@ -1,5 +1,7 @@
 const { Bench } = require('tinybench')
 const { parse, parseValue, options } = require('../src/index.js')
+const { parse: parseV2, parseValue: parseValueV2, options: optionsV2 } = require('../src/index-v2.js')
+const { parse: parseV3, parseValue: parseValueV3, options: optionsV3 } = require('../src/index-v3.js')
 
 const bench = new Bench({ time: 100 })
 
@@ -42,6 +44,7 @@ const arrayString = `key=[ "1", "2", "3", "4", "5" ]`
 const objectString = `config={{ host: "localhost", port: 8080, ssl: true }}`
 
 bench
+  // Original version benchmarks
   .add('parse() - simple string', () => {
     parse(simpleString)
   })
@@ -69,17 +72,116 @@ bench
   .add('options() - template tag', () => {
     options`name=${'bob'} age=${25} active=${true}`
   })
+  // V2 optimized version benchmarks
+  .add('parseV2() - simple string', () => {
+    parseV2(simpleString)
+  })
+  .add('parseV2() - complex string', () => {
+    parseV2(complexString)
+  })
+  .add('parseV2() - multiline nested objects', () => {
+    parseV2(multilineString)
+  })
+  .add('parseV2() - array parsing', () => {
+    parseV2(arrayString)
+  })
+  .add('parseV2() - object parsing', () => {
+    parseV2(objectString)
+  })
+  .add('parseValueV2() - simple value', () => {
+    parseValueV2('"hello world"')
+  })
+  .add('parseValueV2() - array value', () => {
+    parseValueV2('[ 1, 2, 3, "four", true ]')
+  })
+  .add('parseValueV2() - object value', () => {
+    parseValueV2('{ name: "test", count: 42 }')
+  })
+  .add('optionsV2() - template tag', () => {
+    optionsV2`name=${'bob'} age=${25} active=${true}`
+  })
+  // V3 optimized version benchmarks
+  .add('parseV3() - simple string', () => {
+    parseV3(simpleString)
+  })
+  .add('parseV3() - complex string', () => {
+    parseV3(complexString)
+  })
+  .add('parseV3() - multiline nested objects', () => {
+    parseV3(multilineString)
+  })
+  .add('parseV3() - array parsing', () => {
+    parseV3(arrayString)
+  })
+  .add('parseV3() - object parsing', () => {
+    parseV3(objectString)
+  })
+  .add('parseValueV3() - simple value', () => {
+    parseValueV3('"hello world"')
+  })
+  .add('parseValueV3() - array value', () => {
+    parseValueV3('[ 1, 2, 3, "four", true ]')
+  })
+  .add('parseValueV3() - object value', () => {
+    parseValueV3('{ name: "test", count: 42 }')
+  })
+  .add('optionsV3() - template tag', () => {
+    optionsV3`name=${'bob'} age=${25} active=${true}`
+  })
 
 async function run() {
-  console.log('Running oparser benchmarks...\n')
+  console.log('Running oparser benchmarks (Original vs V2 vs V3 Optimized)...\n')
   
   await bench.run()
   
   console.table(bench.table())
   
   console.log('\nBenchmark Results Summary:')
+  
+  // Group results by test type for easier comparison
+  const results = {}
   bench.tasks.forEach(task => {
-    console.log(`${task.name}: ${task.result?.hz?.toFixed(2) || 'N/A'} ops/sec`)
+    const hz = task.result?.hz?.toFixed(2) || 'N/A'
+    console.log(`${task.name}: ${hz} ops/sec`)
+    
+    // Extract test type and version for comparison
+    const match = task.name.match(/(parse(?:Value)?(?:V[23])?)\(\) - (.+)/) || task.name.match(/(options(?:V[23])?)\(\) - (.+)/)
+    if (match) {
+      const [, func, testType] = match
+      const isV2 = func.includes('V2')
+      const isV3 = func.includes('V3')
+      const baseFunc = func.replace(/V[23]/, '')
+      
+      if (!results[testType]) results[testType] = {}
+      if (isV2) {
+        results[testType]['v2'] = parseFloat(hz) || 0
+      } else if (isV3) {
+        results[testType]['v3'] = parseFloat(hz) || 0
+      } else {
+        results[testType]['v1'] = parseFloat(hz) || 0
+      }
+    }
+  })
+  
+  console.log('\n📊 Performance Comparison:')
+  Object.entries(results).forEach(([testType, versions]) => {
+    if (versions.v1) {
+      let output = `${testType}:`
+      
+      if (versions.v2) {
+        const improvement2 = ((versions.v2 - versions.v1) / versions.v1 * 100).toFixed(1)
+        const speedup2 = (versions.v2 / versions.v1).toFixed(2)
+        output += ` V2: ${improvement2}% (${speedup2}x)`
+      }
+      
+      if (versions.v3) {
+        const improvement3 = ((versions.v3 - versions.v1) / versions.v1 * 100).toFixed(1)
+        const speedup3 = (versions.v3 / versions.v1).toFixed(2)
+        output += ` V3: ${improvement3}% (${speedup3}x)`
+      }
+      
+      console.log(output)
+    }
   })
 }
 
