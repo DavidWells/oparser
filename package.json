@@ -3,6 +3,7 @@
   "version": "3.0.22",
   "description": "A very forgiving key-value option parser",
   "main": "src/index.js",
+  "types": "types/index.d.ts",
   "author": "David Wells",
   "license": "MIT",
   "keywords": [
@@ -16,12 +17,14 @@
   },
   "scripts": {
     "test": "uvu src '.test.([mc]js|[jt]sx?)$'",
+    "build": "tsc",
     "publish": "git push origin && git push origin --tags",
     "release:patch": "npm version patch && npm publish",
     "release:minor": "npm version minor && npm publish",
     "release:major": "npm version major && npm publish"
   },
   "devDependencies": {
+    "typescript": "^5.0.0",
     "uvu": "^0.5.1"
   },
   "dependencies": {

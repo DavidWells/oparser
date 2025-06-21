@@ -30,6 +30,12 @@ const BRACKET_TYPES = {
   '[': ']',
 }
 
+/**
+ * Remove temporary character placeholders used during parsing
+ * @param {string} val - String with temporary placeholders
+ * @param {any} [rep] - Replacement parameter (unused)
+ * @returns {string} String with temporary characters restored
+ */
 function removeTempCharacters(val, rep) {
   if (typeof val === 'string') {
     return val
@@ -100,9 +106,9 @@ console.log('CONFLICTING_SLASHSLASH_IN_DOUBLE', CONFLICTING_SLASHSLASH_IN_DOUBLE
 const DEBUG = false
 
 /**
- * Parse config
+ * Parse config string into key-value object
  * @param {string} s - Config string to parse
- * @returns {object}
+ * @returns {Record<string, any>} Parsed configuration object
  */
 function parse(s) {
   if (typeof s === 'undefined' || s === null || s === '') {
@@ -370,6 +376,12 @@ function parse(s) {
   let valueIsOpen = false
   let openInnerQuote = ''
 
+  /**
+   * Save parsed key-value pair to results object
+   * @param {string} key - The configuration key
+   * @param {any} value - The parsed value
+   * @param {string} from - Debug info about where the value came from
+   */
   function save(key, value, from) {
     /* Debug values
     console.log(`Save ${key} from "${from}" in quote ▶ ${openQuote} ◀`, value)
@@ -607,10 +619,10 @@ function parse(s) {
 }
 
 /**
-* Parse freeform value into object
-* @param {string} value - freeform string value to parse into object, array or value.
-* @returns {any}
-*/
+ * Parse freeform value into object
+ * @param {string} value - freeform string value to parse into object, array or value
+ * @returns {any} Parsed value (object, array, string, number, boolean, etc.)
+ */
 function parseValue(value) {
   if (typeof value !== 'string' || !value) {
     return value
@@ -618,6 +630,12 @@ function parseValue(value) {
   return parse(`internal=${value.trim()}`).internal
 }
 
+/**
+ * Pre-format and clean parsed values
+ * @param {string} val - Raw parsed value
+ * @param {string} [quoteType] - Type of quote wrapper used
+ * @returns {any} Cleaned and converted value
+ */
 function preFormat(val, quoteType) {
   // console.log('preFormat start', val, quoteType)
   let value = removeTempCharacters(val).replace(TRAILING_COMMAS, '')
@@ -673,6 +691,11 @@ const JSX_TAG_NAME = /([a-zA-Z][a-zA-Z0-9_-]*)/; // Match valid tag names
 const JSX_CLOSING = />|\/>/; // Match > or />
 const JSX_END = /\s*\)?\s*}$/; // Match ending )} or }
 
+/**
+ * Check if string contains a JSX element
+ * @param {string} value - String to check for JSX syntax
+ * @returns {boolean} True if string appears to contain JSX
+ */
 function isJSXElement(value) {
   // Early exit if doesn't have basic JSX structure
   if (!JSX_OPENING.test(value)) return false;
@@ -687,7 +710,7 @@ function isJSXElement(value) {
   // const closeTag = new RegExp(`</${tagName}>`);
   
   // Either self-closing or has matching end tag
-  return (
+  return Boolean(
     // Self-closing tag case: <tag/>}
     (value.match(JSX_CLOSING) && value.match(JSX_END)) ||
     // Full tag case: <tag>...</tag>}  
@@ -695,11 +718,21 @@ function isJSXElement(value) {
   );
 }
 
+/**
+ * Remove surrounding curly brackets from a string
+ * @param {string} val - String with surrounding brackets
+ * @returns {string} String with brackets removed
+ */
 function removeSurroundingBrackets(val) {
   // console.log('val', val)
   return val.replace(/^{/, '').replace(/}$/, '')
 }
 
+/**
+ * Remove comments from configuration string
+ * @param {string} input - Input string with potential comments
+ * @returns {string} String with comments removed
+ */
 function removeComments(input) {
   return input
     // Remove JS comment blocks and single line comments https://regex101.com/r/XKHU18/2 | alt https://regex101.com/r/ywd8TT/1
@@ -716,6 +749,13 @@ function removeComments(input) {
 // trimBrackets(`{{cool}}}`) => cool}
 // trimBrackets(`{{cool}}`) => cool
 // trimBrackets(`{{{cool}}`) => {cool
+/**
+ * Trim matching brackets from beginning and end of string
+ * @param {string} value - Input string
+ * @param {string} [open=''] - Opening bracket character
+ * @param {string} [close=''] - Closing bracket character  
+ * @returns {string} String with trimmed brackets
+ */
 function trimBrackets(value, open = '', close = '') {
   // console.log('>>> trimBrackets value', value)
   const leadingCurleyBrackets = value.match(/^{{1,}/)
@@ -743,9 +783,9 @@ function trimBrackets(value, open = '', close = '') {
 }
 
 /**
- * Verify brackets are balanced
- * @param  {string}  str - string with code
- * @return {Boolean}
+ * Verify all bracket types are balanced in string
+ * @param {string} str - String with code/brackets to check
+ * @returns {boolean} True if all brackets are balanced
  */
 function areAllBracketsBalanced(str) {
   return !str.split('').reduce((uptoPrevChar, thisChar) => {
@@ -758,6 +798,12 @@ function areAllBracketsBalanced(str) {
   }, 0)
 }
 
+/**
+ * Check if specific bracket type is balanced in string
+ * @param {string} str - String to check
+ * @param {string} [open='{'] - Opening bracket character to check
+ * @returns {boolean} True if brackets are balanced
+ */
 function isBalanced(str, open = '{') {
   // console.log('isBalanced open', open)
   return !str.split('').reduce((uptoPrevChar, thisChar) => {
@@ -771,12 +817,13 @@ function isBalanced(str, open = '{') {
 }
 
 /**
- * Parse string of key value options. Template tag version
- * @param {string} input - string of options. Can be multiline
- * @returns {Record<string, any>}
+ * Parse string of key value options using template literal syntax
+ * @param {TemplateStringsArray|string} input - Template strings array from template literal or string
+ * @param {...any} substitutions - Template literal substitution values
+ * @returns {Record<string, any>} Parsed configuration object
  */
 function options(input = '', ...substitutions) {
-  let str = String.raw(input, ...substitutions)
+  let str = typeof input === 'string' ? input : String.raw(input, ...substitutions)
   return parse(str)
 }
 
