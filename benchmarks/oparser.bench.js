@@ -166,21 +166,60 @@ async function run() {
   console.log('\n📊 Performance Comparison:')
   Object.entries(results).forEach(([testType, versions]) => {
     if (versions.v1) {
-      let output = `${testType}:`
+      let output = `\n${testType}:`
       
       if (versions.v2) {
         const improvement2 = ((versions.v2 - versions.v1) / versions.v1 * 100).toFixed(1)
         const speedup2 = (versions.v2 / versions.v1).toFixed(2)
-        output += ` V2: ${improvement2}% (${speedup2}x)`
+        const isFaster2 = versions.v2 > versions.v1
+        const arrow2 = isFaster2 ? '↗️' : '↘️'
+        const status2 = isFaster2 ? 'FASTER' : 'SLOWER'
+        output += `\n  V2: ${arrow2} ${improvement2}% (${speedup2}x) [${status2}]`
       }
       
       if (versions.v3) {
         const improvement3 = ((versions.v3 - versions.v1) / versions.v1 * 100).toFixed(1)
         const speedup3 = (versions.v3 / versions.v1).toFixed(2)
-        output += ` V3: ${improvement3}% (${speedup3}x)`
+        const isFaster3 = versions.v3 > versions.v1
+        const arrow3 = isFaster3 ? '↗️' : '↘️'
+        const status3 = isFaster3 ? 'FASTER' : 'SLOWER'
+        output += `\n  V3: ${arrow3} ${improvement3}% (${speedup3}x) [${status3}]`
       }
       
       console.log(output)
+    }
+  })
+
+  // Add summary statistics
+  console.log('\n📈 Summary:')
+  let v2Wins = 0, v3Wins = 0, totalTests = 0
+  
+  Object.entries(results).forEach(([testType, versions]) => {
+    if (versions.v1) {
+      totalTests++
+      if (versions.v2 && versions.v2 > versions.v1) v2Wins++
+      if (versions.v3 && versions.v3 > versions.v1) v3Wins++
+    }
+  })
+  
+  console.log(`V2 wins: ${v2Wins}/${totalTests} tests`)
+  console.log(`V3 wins: ${v3Wins}/${totalTests} tests`)
+  
+  // Find best performing version for each test
+  console.log('\n🏆 Best Performance by Test:')
+  Object.entries(results).forEach(([testType, versions]) => {
+    if (versions.v1) {
+      const performances = [
+        { version: 'V1', value: versions.v1 },
+        ...(versions.v2 ? [{ version: 'V2', value: versions.v2 }] : []),
+        ...(versions.v3 ? [{ version: 'V3', value: versions.v3 }] : [])
+      ]
+      
+      const best = performances.reduce((max, curr) => 
+        curr.value > max.value ? curr : max
+      )
+      
+      console.log(`  ${testType}: ${best.version} (${best.value.toFixed(2)} ops/sec)`)
     }
   })
 }

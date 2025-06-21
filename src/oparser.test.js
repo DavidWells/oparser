@@ -3,6 +3,8 @@ const path = require('path')
 const { test } = require('uvu') 
 const assert = require('uvu/assert')
 const { parse, parseValue } = require('./')
+// const { parse, parseValue } = require('./index-v2')
+// const { parse, parseValue } = require('./index-v3')
 const { convert } = require('./utils/convert')
 // const { parse, parseValue } = require('../')
 
