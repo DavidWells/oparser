@@ -3088,4 +3088,11 @@ test('Giant ini', () => {
   console.log('val', val)
 })
 
+test('Json numbers', () => {
+  const val = parseValue('{ "foo": 1.222, "bar": 1 }')
+  console.log('val', val)
+  assert.equal(val.foo, 1.222)
+  assert.equal(val.bar, 1)
+})
+
 test.run()

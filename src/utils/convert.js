@@ -157,6 +157,7 @@ function formatObj(value) {
 
     /* Pop off key */
     const k = parts.shift().trim()
+    // console.log('k', k)
     /* Join the rest of the parts */
     const value = parts.join(splitter).trim()
     
@@ -232,6 +233,7 @@ function convert(value) {
         cleaner = value
         // console.log('cleaner', value)
       }
+      // console.log('value', value)
       const val = parseJSON(value) // last attempt to format an array like [ one, two ]
       // console.log('Do it', val)
       return val

@@ -1,7 +1,21 @@
-
-
+const NUMBER_REGEX = /^\d+(\.\d+)?$/ // also match 1.222
+const BOOLEAN_REGEX = /^(true|false)$/
+const ARRAY_REGEX = /^\[.*\]$/
 
 function ensureWrap(s = '', open, close) {
+  const isQuote = open === '"' || open === "'"
+  // Don't wrap numbers
+  if (NUMBER_REGEX.test(s) && isQuote) {
+    return s
+  }
+  // Don't wrap booleans
+  if (BOOLEAN_REGEX.test(s) && isQuote) {
+    return s
+  }
+  // Don't wrap arrays
+  if (ARRAY_REGEX.test(s) && isQuote) {
+    return s
+  }
   let str = s
   close = close || open
   if (str[0] !== open) {

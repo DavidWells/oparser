@@ -46,4 +46,4 @@ function cleanInner(str, pairs, quoteType) {
 
 const str = "'Wow 'this' is great'"
 const x = invertQuotes(str, "'", 'string')
-console.log('x', x)
+// console.log('x', x)
