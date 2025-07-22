@@ -156,7 +156,7 @@ function parse(s) {
   /*
   if (DEBUG) {
     console.log('pre pass', str)
-    console.log('end prepass')
+    console.log('end pre-pass')
   }
   /** */
   
@@ -418,7 +418,7 @@ function parse(s) {
         // Last char add it
         bufferKey+= char
       }
-      /* If not white spaces before seperator, set as true boolean */
+      /* If not white spaces before separator, set as true boolean */
       if (nextChar !== '=') {
         save(bufferKey, true, 'true bool')
         continue;
@@ -433,7 +433,7 @@ function parse(s) {
       continue;
     }
 
-    /* trim trailing spaces from after seperator: "bob =( trimmed spaces )cool" */
+    /* trim trailing spaces from after separator: "bob =( trimmed spaces )cool" */
     if (!openQuote && !bufferValue && char === ' ') {
       // console.log('EXIT ON', bufferValue)
       continue;
@@ -545,7 +545,7 @@ function parse(s) {
       // }
 
       if (
-        (openQuote && openQuote !== '{' && openQuote !== '[') // Isnt value in brackets
+        (openQuote && openQuote !== '{' && openQuote !== '[') // Isn't value in brackets
         && (char === openQuote && (WHITE_SPACE.test(nextChar) || nextChar === ',')) // Matching closing close with trailing space
       ) {
         bufferValue+= char
@@ -571,8 +571,8 @@ function parse(s) {
         continue;
       }
 
-      const isCulryBracketStart = !openQuote && char === '{'
-      if (!openQuote && isCulryBracketStart) {
+      const isCurlyBracketStart = !openQuote && char === '{'
+      if (!openQuote && isCurlyBracketStart) {
         openQuote = char
         continue;
       }
@@ -588,7 +588,7 @@ function parse(s) {
       }
       
       if (!bufferValue && (prevChar === '=' || prevChar === ' ') && VALID_VALUE_CHAR.test(char)) {
-        // console.log('Set infered quote')
+        // console.log('Set inferred quote')
         openQuote = INFERRED_QUOTE
         bufferValue+= char
         continue;
@@ -718,12 +718,12 @@ function removeComments(input) {
 // trimBrackets(`{{{cool}}`) => {cool
 function trimBrackets(value, open = '', close = '') {
   // console.log('>>> trimBrackets value', value)
-  const leadingCurleyBrackets = value.match(/^{{1,}/)
-  const trailingCurleyBrackets = value.match(/}{1,}$/)
-  // console.log('leadingCurleyBrackets', leadingCurleyBrackets)
-  // console.log('trailingCurleyBrackets', trailingCurleyBrackets)
-  if (leadingCurleyBrackets && trailingCurleyBrackets) {
-    const len = leadingCurleyBrackets[0].length <= trailingCurleyBrackets[0].length ? leadingCurleyBrackets : trailingCurleyBrackets
+  const leadingCurlyBrackets = value.match(/^{{1,}/)
+  const trailingCurlyBrackets = value.match(/}{1,}$/)
+  // console.log('leadingCurlyBrackets', leadingCurlyBrackets)
+  // console.log('trailingCurlyBrackets', trailingCurlyBrackets)
+  if (leadingCurlyBrackets && trailingCurlyBrackets) {
+    const len = leadingCurlyBrackets[0].length <= trailingCurlyBrackets[0].length ? leadingCurlyBrackets : trailingCurlyBrackets
     const trimLength = len[0].length
     // console.log('trimLength', trimLength)
     const trimLeading = new RegExp(`^{{${trimLength}}`)
@@ -798,7 +798,7 @@ module.exports = {
 // function replacer(match, open, content, close, offset) {
 //   console.log(arguments)
 //   return repeatStringNumTimes(CURLY_OPEN, open.length) + content + repeatStringNumTimes(CURLY_CLOSE, close.length)
-//   // return (offset === 0 ? "FIRSRT" : "") + match
+//   // return (offset === 0 ? "FIRST" : "") + match
 // }
 
 // function replaceCloseCurly(match, open, _, extra) {
@@ -806,5 +806,5 @@ module.exports = {
 //   console.log('close', open)
 //   console.log('extra', extra)
 //   return repeatStringNumTimes(CURLY_CLOSE, open.length) + (extra || '')
-//   // return (offset === 0 ? "FIRSRT" : "") + match
+//   // return (offset === 0 ? "FIRST" : "") + match
 // }
