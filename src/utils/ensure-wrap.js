@@ -2,6 +2,13 @@ const NUMBER_REGEX = /^\d+(\.\d+)?$/ // also match 1.222
 const BOOLEAN_REGEX = /^(true|false)$/
 const ARRAY_REGEX = /^\[.*\]$/
 
+/**
+ * Ensure string is wrapped with specified characters
+ * @param {string} [s=''] - String to wrap
+ * @param {string} [open] - Opening character
+ * @param {string} [close] - Closing character (defaults to open)
+ * @returns {string} Wrapped string
+ */
 function ensureWrap(s = '', open, close) {
   const isQuote = open === '"' || open === "'"
   // Don't wrap numbers

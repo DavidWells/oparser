@@ -1,9 +1,15 @@
 
 /**
- * Turn object into options string
- * @param {Record<string, any>} obj 
- * @param {object} opts 
- * @returns {string}
+ * Convert object to configuration string format
+ * @param {Record<string, any>} obj - Object to stringify
+ * @param {object} [opts={}] - Formatting options
+ * @param {string} [opts.joiner='='] - Character to join keys and values
+ * @param {boolean} [opts.asJs=true] - Convert to JavaScript object notation
+ * @param {boolean} [opts.compressed=false] - Use compressed JSON format
+ * @param {boolean} [opts.singleLineValues] - Format values on single lines
+ * @param {boolean} [opts.expanded] - Use expanded JSON format with indentation
+ * @param {string} [opts.separator='\n'] - Separator between key-value pairs
+ * @returns {string} Formatted configuration string
  */
 function stringify(obj, opts = {}) {
   if (typeof obj !== 'object') return ''
@@ -63,6 +69,12 @@ function stringify(obj, opts = {}) {
   return attrs
 }
 
+/**
+ * Format object for stringification
+ * @param {any} obj - Object to format
+ * @param {object} opts - Formatting options
+ * @returns {string} Formatted object string
+ */
 function formatObject(obj, opts) {
   let cleanObj = ''
   if (opts.compressed) {
@@ -90,15 +102,25 @@ function formatObject(obj, opts) {
   return opts.asJs ? jsonToJsObject(cleanObj) : cleanObj
 }
 
+/**
+ * Convert JSON string to JavaScript object notation (alternative implementation)
+ * @param {string} [jsonStr=''] - JSON string to convert
+ * @returns {string} JavaScript object notation string
+ */
 function jsonToJsObjectTwo(jsonStr = '') {
   return jsonStr
     .replace(/^([\t ]*)("([^\\"]*|\\.)*")([\t ]*):([\t ]*)/gm, '$1$3: ')
     .replace(/^([\t ]*){?[\t ]*("([^\\"]*|\\.)*")([\t ]*):([\t ]*)/gm, '$1{ $3: ')
 }
 
+/**
+ * Convert JSON string to JavaScript object notation by removing quotes from keys
+ * @param {string} str - JSON string to convert
+ * @returns {string} JavaScript object notation string
+ */
 function jsonToJsObject(str){
   // console.log('str', str)
-  arr = str.match(/"[^"\n]*?":/g)
+  const arr = str.match(/"[^"\n]*?":/g)
   if (!arr) {
     return ''
   }
@@ -110,6 +132,14 @@ function jsonToJsObject(str){
   return str
 }
 
+/**
+ * Format individual values for stringification
+ * @param {any} val - Value to format
+ * @param {object} opts - Formatting options
+ * @param {boolean} [insideArray] - Whether value is inside an array
+ * @param {boolean} [insideObject] - Whether value is inside an object
+ * @returns {any} Formatted value
+ */
 function format(val, opts, insideArray, insideObject) {
   // console.log(typeof val, val)
   const type = typeof val
@@ -137,6 +167,11 @@ function format(val, opts, insideArray, insideObject) {
   return val
 }
 
+/**
+ * Stringify object with minimal spacing
+ * @param {any} obj - Object to stringify
+ * @returns {string} Compact JSON string with spaces
+ */
 function stringifyWithSpaces(obj) {
   // stringify, with line-breaks and indents
 	let result = JSON.stringify(obj, null, 1)
@@ -153,7 +188,17 @@ function stringifyWithSpaces(obj) {
 
 const stringOrChar = /("(?:[^\\"]|\\.)*")|[:,]/g
 
-// https://github.com/lydell/json-stringify-pretty-compact/blob/main/index.js
+/**
+ * Pretty print JSON with compact formatting
+ * Based on https://github.com/lydell/json-stringify-pretty-compact/blob/main/index.js
+ * @param {any} passedObj - Object to stringify
+ * @param {object} [options={}] - Formatting options
+ * @param {number|string} [options.indent=2] - Indentation size or string
+ * @param {number} [options.maxLength=80] - Maximum line length
+ * @param {Function} [options.replacer] - JSON replacer function
+ * @param {boolean} [options.bracketSpacing] - Add spacing inside brackets
+ * @returns {string} Formatted JSON string
+ */
 function prettier(passedObj, options = {}) {
   const indent = JSON.stringify([1], undefined, options.indent === undefined ? 2 : options.indent).slice(2, -3)
   const maxLength = indent === "" ? Infinity : options.maxLength === undefined ? 80 : options.maxLength
@@ -164,7 +209,7 @@ function prettier(passedObj, options = {}) {
       obj = obj.toJSON();
     }
 
-    const string = JSON.stringify(obj, replacer)
+    const string = JSON.stringify(obj, /** @type {any} */ (replacer))
 
     if (string === undefined) {
       return string;
@@ -226,6 +271,11 @@ function prettier(passedObj, options = {}) {
   })(passedObj, "", 0)
 }
 
+/**
+ * Add proper spacing inside brackets and braces
+ * @param {string} str - String to add bracket spacing to
+ * @returns {string} String with proper bracket spacing
+ */
 function bracketSpacing(str) {
   return str
     .replace(/^\[{/, '[{ ')
@@ -237,11 +287,11 @@ function bracketSpacing(str) {
 }
 
 /**
- * Wrap string in characters if not already wrapped in them
- * @param {string|Array<string>} value
- * @param {string} open
- * @param {string} close
- * @returns {string|string[]}
+ * Ensure string is wrapped in quotes if not already quoted
+ * @param {string|string[]} value - String or array of strings to quote
+ * @param {string} [open='"'] - Opening quote character
+ * @param {string} [close] - Closing quote character (defaults to open)
+ * @returns {string|string[]} Quoted string or array of quoted strings
  */
 function ensureQuote(value, open = '"', close) {
   let i = -1
@@ -256,10 +306,22 @@ function ensureQuote(value, open = '"', close) {
   return result
 }
 
+/**
+ * Get opening character if not already present
+ * @param {string} str - String to check
+ * @param {string} char - Character to prepend if missing
+ * @returns {string} Character or empty string
+ */
 function startChar(str, char) {
   return (str[0] === char) ? '' : char
 }
 
+/**
+ * Get closing character if not already present
+ * @param {string} str - String to check
+ * @param {string} char - Character to append if missing
+ * @returns {string} Character or empty string
+ */
 function endChar(str, char) {
   return (str[str.length -1] === char) ? '' : char
 }

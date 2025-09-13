@@ -23,24 +23,51 @@ const TRIM_INNER_TRAILING_OBJECT_COMMA = /(,+[^\S]*)*?}\s*/m
   // value = value.replace(/(?:,+[^\S]*)+?]\s*$/gm, ']')
   // console.log(JSON.parse(value))
 
+/**
+ * Check if string looks like an array
+ * @param {string} str - String to check
+ * @returns {boolean} True if string has array-like syntax
+ */
 function isArrayLike(str) {
   if (typeof str !== 'string') return false
   return Boolean(ARRAY_REGEX.test(str))
 }
 
+/**
+ * Check if string looks like an object
+ * @param {string} str - String to check
+ * @returns {boolean} True if string has object-like syntax
+ */
 function isObjectLike(str) {
   if (typeof str !== 'string') return false
   return Boolean(OBJECT_REGEX.test(str))
 }
 
+/**
+ * Replace double quotes with placeholder tokens
+ * @param {string} input - Input string
+ * @returns {string} String with double quotes replaced
+ */
 function replaceDoubleQuotes(input) {
   return replaceBetweenMarkers(input, /"/g, '__inner_dbl_quote__')
 }
 
+/**
+ * Replace commas with placeholder tokens
+ * @param {string} input - Input string
+ * @returns {string} String with commas replaced
+ */
 function replaceCommas(input) {
   return replaceBetweenMarkers(input, /,/g, COMMA)
 }
 
+/**
+ * Replace pattern between JSON object markers
+ * @param {string} input - Input string
+ * @param {RegExp} pattern - Pattern to replace
+ * @param {string} replace - Replacement string
+ * @returns {string} String with replacements made between markers
+ */
 function replaceBetweenMarkers(input, pattern, replace) {
   // Match content between __OPEN_JSON__OBJECT__ and __CLOSE_JSON__OBJECT__
   const regexMarkers = /(__OPEN_JSON__OBJECT__)([\s\S]*?)(__CLOSE_JSON__OBJECT__)/g
@@ -66,6 +93,11 @@ const CONFLICTING_INNER_JSON_CLOSE_IN_SINGLE = replaceInnerCharPattern("}\\]}", 
 // const CONFLICTING_INNER_COLONS_SINGLE = replaceInnerCharPattern(":", `'`, `'`, 2)
 // const CONFLICTING_INNER_COLONS_DOUBLE = replaceInnerCharPattern(":", `"`, `"`, 2)
 
+/**
+ * Clean object string by restoring placeholder tokens
+ * @param {string} value - String with placeholder tokens
+ * @returns {string} Cleaned string with tokens restored
+ */
 function cleanObjectString(value) {
   return value
       .replace(/\n/g, '\\n')
@@ -80,6 +112,11 @@ function cleanObjectString(value) {
 // const CONFLICTING_CURLIES_IN_SINGLE = replaceInnerCharPattern("}", `'`, `'`, 2)
 // const CONFLICTING_CURLIES_IN_DOUBLE = replaceInnerCharPattern("}", `\\[`, `\\]`, 1)
 
+/**
+ * Format object-like string into proper JSON
+ * @param {string} value - Object-like string to format
+ * @returns {string} Formatted object string
+ */
 function formatObj(value) {
 
   // const hasConflictingInnerColonInSingle = CONFLICTING_INNER_COLONS_SINGLE.test(value)
@@ -179,6 +216,11 @@ function formatObj(value) {
   return newObjectString
 }
 
+/**
+ * Convert string value to appropriate JavaScript type
+ * @param {string} value - String value to convert
+ * @returns {any} Converted value (boolean, number, object, array, or string)
+ */
 function convert(value) {
   /*
   console.log('convert value', value)
