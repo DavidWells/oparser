@@ -100,9 +100,10 @@ console.log('CONFLICTING_SLASHSLASH_IN_DOUBLE', CONFLICTING_SLASHSLASH_IN_DOUBLE
 const DEBUG = false
 
 /**
- * Parse config
+ * Parse config string into key-value object
+ * @template {Record<string, any>} [T=Record<string, any>]
  * @param {string} s - Config string to parse
- * @returns {object}
+ * @returns {T}
  */
 function parse(s) {
   if (typeof s === 'undefined' || s === null || s === '') {
@@ -782,8 +783,10 @@ function isBalanced(str, open = '{') {
 
 /**
  * Parse string of key value options. Template tag version
- * @param {string} input - string of options. Can be multiline
- * @returns {Record<string, any>}
+ * @template {Record<string, any>} [T=Record<string, any>]
+ * @param {TemplateStringsArray} input - template strings array
+ * @param {...any} substitutions - template substitutions
+ * @returns {T}
  */
 function options(input = '', ...substitutions) {
   let str = String.raw(input, ...substitutions)

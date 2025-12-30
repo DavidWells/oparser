@@ -1,3 +1,6 @@
+# Generated types (published but not tracked)
+types/
+
 # Logs
 logs
 *.log

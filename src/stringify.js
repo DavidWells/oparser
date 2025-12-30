@@ -1,8 +1,14 @@
+/**
+ * @typedef {Object} StringifyOptions
+ * @property {string} [joiner] - Character to join key/value pairs (default: '=')
+ * @property {boolean} [asJs] - Format as JS syntax (default: true)
+ * @property {boolean} [compressed] - Remove whitespace (default: false)
+ */
 
 /**
  * Turn object into options string
- * @param {Record<string, any>} obj 
- * @param {object} opts 
+ * @param {Record<string, any>} obj - Object to stringify
+ * @param {StringifyOptions} [opts] - Stringify options
  * @returns {string}
  */
 function stringify(obj, opts = {}) {
