@@ -1,0 +1,3 @@
+baseline-before-fixes: avg=68.79ms, min=62.60ms, max=87.70ms (10 runs)
+after-perf-fixes: avg=61.40ms, min=60.49ms, max=62.55ms (10 runs)
+after-all-fixes: avg=61.42ms, min=59.11ms, max=68.53ms (10 runs)

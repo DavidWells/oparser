@@ -284,34 +284,27 @@ function convert(value) {
             const sealArray = acc.arrayOpenCount > 0 && acc.arrayOpenCount === acc.arrayCloseCount
 
             if (acc.objectOpenCount > 0 && !sealObject || acc.arrayOpenCount > 0 && !sealArray) {
-            // if (curr.match(/:|{/)) {
-              return {
-                ...acc,
-                next: acc.next + curr + ','
-              }
+              acc.next += curr + ','
+              return acc
             }
 
             if (sealObject || sealArray) {
-              return {
-                ...acc,
-                ...(!sealObject) ? {} : {
-                  objectOpenCount: 0,
-                  objectCloseCount: 0,
-                },
-                ...(!sealArray) ? {} : {
-                  arrayOpenCount: 0,
-                  arrayCloseCount: 0,
-                },
-                next: '',
-                values: acc.values.concat(acc.next + curr)
+              if (sealObject) {
+                acc.objectOpenCount = 0
+                acc.objectCloseCount = 0
               }
+              if (sealArray) {
+                acc.arrayOpenCount = 0
+                acc.arrayCloseCount = 0
+              }
+              acc.values.push(acc.next + curr)
+              acc.next = ''
+              return acc
             }
 
             // default
-            return {
-              ...acc,
-              values: acc.values.concat(curr)
-            }
+            acc.values.push(curr)
+            return acc
           }, {
             next: '',
             values: [],

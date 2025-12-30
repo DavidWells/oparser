@@ -73,6 +73,8 @@ const CONFLICTING_HASH_IN_SINGLE = replaceInnerCharPattern("#", `'`, `'`, 2)
 const CONFLICTING_HASH_IN_DOUBLE = replaceInnerCharPattern("#", `"`, `"`, 2)
 const CONFLICTING_SLASHSLASH_IN_SINGLE = replaceInnerCharPattern("\\/\\/", `'`, `'`, 2)
 const CONFLICTING_SLASHSLASH_IN_DOUBLE = replaceInnerCharPattern("\\/\\/", `"`, `"`, 2)
+const SINGLE_QUOTES_STAR_PATTERN = replaceInnerCharPattern('\\*', `'`, `'`, 2)
+const DOUBLE_QUOTES_STAR_PATTERN = replaceInnerCharPattern('\\*', '"', '"', 2)
 
 // const ASYNC_ARROW_FULL_FN = /(?:async\s+)?\s?\(([\s\S]*)\)\s?(=>|_≡►)\s*(?:(?:[^}{]+|\{(?:[^}{]+|\{[^}{]*\})*\})*(?:\s?\(.*\)\s?\)\s?)?)?(?:\;)?/
 // https://regex101.com/r/XO8rRl/1
@@ -139,6 +141,17 @@ function parse(s) {
     }
   }
 
+  /* Fast path: if looks like JSON object/array, try JSON.parse first */
+  const firstChar = str[0]
+  const lastChar = str[str.length - 1]
+  if ((firstChar === '{' && lastChar === '}') || (firstChar === '[' && lastChar === ']')) {
+    try {
+      return JSON.parse(str)
+    } catch (e) {
+      // Fall through to forgiving parser
+    }
+  }
+
   /*
   if (DEBUG) {
     console.log('>> start str')
@@ -166,8 +179,7 @@ function parse(s) {
   }
   /** */
   
-  const hasInnerSpacesInSinglesQuote = SPACES_IN_SINGLE_QUOTE_RE.test(str)
-  SPACES_IN_SINGLE_QUOTE_RE.lastIndex = 0 // Reset regex pattern due to g flag https://bit.ly/2UCNhJz
+  const hasInnerSpacesInSinglesQuote = str.search(SPACES_IN_SINGLE_QUOTE_RE) !== -1
 
   /*
   if (DEBUG) {
@@ -190,8 +202,6 @@ function parse(s) {
   // }
 
   if (hasInnerSpacesInSinglesQuote) {
-    const SINGLE_QUOTES_STAR_PATTERN = replaceInnerCharPattern('\\*', `'`, `'`, 2)
-    // console.log('SINGLE_QUOTES_STAR_PATTERN', SINGLE_QUOTES_STAR_PATTERN)
     str = str
       /* Replace spaces in single quotes with temporary spaces */
       .replace(SINGLE_QUOTES_STAR_PATTERN, STARS)
@@ -229,15 +239,13 @@ function parse(s) {
   /** */
 
   /* Fix conflicting double quotes bob="inner "quote" conflict" steve='cool' */
-  const hasInnerSpacesInDoubleQuote = SPACES_IN_DOUBLE_QUOTE_RE.test(str)
+  const hasInnerSpacesInDoubleQuote = str.search(SPACES_IN_DOUBLE_QUOTE_RE) !== -1
   /*
   if (DEBUG) {
     console.log('end hasInnerSpacesInDoubleQuote', hasInnerSpacesInDoubleQuote)
   }
   /** */
   if (hasInnerSpacesInDoubleQuote) {
-    const DOUBLE_QUOTES_STAR_PATTERN = replaceInnerCharPattern('\\*', '"', '"', 2)
-    // console.log('DOUBLE_QUOTES_STAR_PATTERN', DOUBLE_QUOTES_STAR_PATTERN)
     str = str
       .replace(SPACES_IN_DOUBLE_QUOTE_RE, SPACES)
       .replace(DOUBLE_QUOTES_STAR_PATTERN, STARS)
@@ -273,14 +281,14 @@ function parse(s) {
 
 
   /* Conflicting inner  } */
-  const hasConflictingCurliesInSingle = CONFLICTING_CURLIES_IN_SINGLE.test(str)
-  const hasConflictingCurliesInDouble = CONFLICTING_CURLIES_IN_DOUBLE.test(str)
+  const hasConflictingCurliesInSingle = str.search(CONFLICTING_CURLIES_IN_SINGLE) !== -1
+  const hasConflictingCurliesInDouble = str.search(CONFLICTING_CURLIES_IN_DOUBLE) !== -1
   /* Conflicting inner # */
-  const hasConflictingHashesInSingle = CONFLICTING_HASH_IN_SINGLE.test(str)
-  const hasConflictingHashesInDouble = CONFLICTING_HASH_IN_DOUBLE.test(str)
+  const hasConflictingHashesInSingle = str.search(CONFLICTING_HASH_IN_SINGLE) !== -1
+  const hasConflictingHashesInDouble = str.search(CONFLICTING_HASH_IN_DOUBLE) !== -1
   /* Conflicting inner '//' */
-  const hasConflictingSlashesInSingle = CONFLICTING_SLASHSLASH_IN_SINGLE.test(str)
-  const hasConflictingSlashesInDouble = CONFLICTING_SLASHSLASH_IN_DOUBLE.test(str)
+  const hasConflictingSlashesInSingle = str.search(CONFLICTING_SLASHSLASH_IN_SINGLE) !== -1
+  const hasConflictingSlashesInDouble = str.search(CONFLICTING_SLASHSLASH_IN_DOUBLE) !== -1
   /* conflicting inner JSON */
 
   /*
@@ -759,26 +767,24 @@ function trimBrackets(value, open = '', close = '') {
  * @return {Boolean}
  */
 function areAllBracketsBalanced(str) {
-  return !str.split('').reduce((uptoPrevChar, thisChar) => {
-    if (thisChar === '(' || thisChar === '{' || thisChar === '[') {
-      return ++uptoPrevChar
-    } else if (thisChar === ')' || thisChar === '}' || thisChar === ']') {
-      return --uptoPrevChar
-    }
-    return uptoPrevChar
-  }, 0)
+  let count = 0
+  for (let i = 0; i < str.length; i++) {
+    const c = str[i]
+    if (c === '(' || c === '{' || c === '[') count++
+    else if (c === ')' || c === '}' || c === ']') count--
+  }
+  return count === 0
 }
 
 function isBalanced(str, open = '{') {
-  // console.log('isBalanced open', open)
-  return !str.split('').reduce((uptoPrevChar, thisChar) => {
-    if (thisChar === open) {
-      return ++uptoPrevChar
-    } else if (thisChar === BRACKET_TYPES[open]) { // close char
-      return --uptoPrevChar
-    }
-    return uptoPrevChar
-  }, 0)
+  const close = BRACKET_TYPES[open]
+  let count = 0
+  for (let i = 0; i < str.length; i++) {
+    const c = str[i]
+    if (c === open) count++
+    else if (c === close) count--
+  }
+  return count === 0
 }
 
 /**
