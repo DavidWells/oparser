@@ -5,10 +5,10 @@ const { replaceInnerCharPattern } = require('./utils/replace-inner')
 const WHITE_SPACE = /[\s\n\r]/
 const SURROUNDING_QUOTES = /^("|'|`)|("|'|`)$/g
 // const SURROUNDING_QUOTES = /^("|'|`)(?:[^\1])*(\1)$/g
-const VALID_KEY_CHAR = /^[A-Za-z0-9_]/
+const VALID_KEY_CHAR = /^[A-Za-z0-9_@$]/
 const VALID_VALUE_CHAR = /(.+)/
 const TRAILING_COMMAS = /,+$/
-const NOT_OBJECT_LIKE = /^{[^:,]*}/
+const NOT_OBJECT_LIKE = /^{[^:,]+}/
 const START_WITH_PAREN = /^\s*\(/
 const INFERRED_QUOTE = 'INFERRED'
 const SPACES = '__SPACE__'
@@ -130,7 +130,12 @@ function parse(s) {
   // return
 
   if (str.length > 20000) {
-    throw new Error(`String is too long at ${str.length} characters. Max length is 20000 characters.`)
+    // For large strings, try JSON.parse first (assuming well-formed data)
+    try {
+      return JSON.parse(str)
+    } catch (e) {
+      throw new Error(`String is too long (${str.length} chars) for forgiving parser. JSON.parse failed: ${e.message}`)
+    }
   }
 
   /*
@@ -194,7 +199,8 @@ function parse(s) {
       .replace(/__SPACE__'/g, ` ${SINGLE_QUOTE}`)
       .replace(/'__SPACE__/g, `${SINGLE_QUOTE} `)
       /* Unbalanced single or double quotes break previous regex, so we need to fix */
-      /* Fix  trailing close quote */
+      /* Fix trailing close quote - match __SPACE__ placeholders or real spaces that precede _S_Q_ */
+      .replace(/(\s*)((__SPACE__|\s)+)_S_Q_(\s*)$/g, `$1$2'$4`)
       .replace(/(\s*)((__SPACE__)+)+(\s*)_S_Q_(\s*)/g, `$1$2$4'$5`)
       /* Fix unbalanced quote bracket replacement */
       .replace(/}__SPACE__([\S])/, '} $1')
@@ -202,8 +208,10 @@ function parse(s) {
     if (isMultiline) {
       str = str.replace(/([^=\]\}])'((__LINEBREAK__)+)+$/gm, `$1${SINGLE_QUOTE}`)
     } else {
-      /* Fix Single ' space key=val */ 
+      /* Fix Single ' space key=val */
       str = str.replace(/_S_Q_ ([A-Za-z0-9_]*=)/, "' $1")
+      /* Fix opening quote for whitespace-only single quoted values */
+      str = str.replace(/=_S_Q_((?:__SPACE__|\s)+)'/g, "='$1'")
     }
 
     /*
@@ -236,17 +244,19 @@ function parse(s) {
       .replace(/__SPACE__"/g, ` ${DOUBLE_QUOTE}`)
       .replace(/"__SPACE__/g, `${DOUBLE_QUOTE} `)
       /* Unbalanced single or double quotes break previous regex, so we need to fix */
-      /* Fix trailing close quote */
-      .replace(/(\s*)((__SPACE__)+)+(\s*)_D_Q_(\s*)/g, `$1$2$4"$5`)
+      /* Fix trailing close quote - match both __SPACE__ placeholders and real spaces */
+      .replace(/(\s*)((__SPACE__|\s)+)+(\s*)_D_Q_(\s*)/g, `$1$2$4"$5`)
        /* Fix  unbalanced quote bracket replacement */
       .replace(/}__SPACE__([\S])/, '} $1')
  
     if (isMultiline) {
       str = str.replace(/([^=\]\}])"((__LINEBREAK__)+)+$/gm, `$1${DOUBLE_QUOTE}`)
     } else {
-      /* Fix Double " space key=val */ 
+      /* Fix Double " space key=val */
       str = str.replace(/_D_Q_ ([A-Za-z0-9_]*=)/, '" $1')
     }
+    /* Fix opening quote that was incorrectly converted (whitespace-only values) */
+    str = str.replace(/=_D_Q_(\s+)((__SPACE__|\s)*)/g, '="$1$2')
     /*
     if (DEBUG) {
       console.log('end hasInnerSpacesInDoubleQuote fix')
@@ -638,7 +648,7 @@ function preFormat(val, quoteType) {
     // console.log('preFormat value tow', value)
   }
   // If Doesn't look like JSON object
-  else if (value.match(/^{[^:,]*}/)) {
+  else if (value.match(/^{[^:,]+}/)) {
     value = removeSurroundingBrackets(value)
   } 
   // If looks like array in brackets {[ thing, thing, thing ]}

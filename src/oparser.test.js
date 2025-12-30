@@ -3095,4 +3095,430 @@ test('Json numbers', () => {
   assert.equal(val.bar, 1)
 })
 
+/************************************************************************************************************
+ * Edge Cases - Values
+ ***********************************************************************************************************/
+
+test('null values', () => {
+  const one = parse(`key=null`)
+  assert.equal(one, { key: null }, 'key=null')
+
+  const two = parse(`key={null}`)
+  assert.equal(two, { key: null }, 'key={null}')
+
+  const three = parse(`key={{null}}`)
+  assert.equal(three, { key: null }, 'key={{null}}')
+
+  // null as string when quoted
+  const four = parse(`key="null"`)
+  assert.equal(four, { key: 'null' }, 'key="null"')
+
+  const five = parse(`key='null'`)
+  assert.equal(five, { key: 'null' }, "key='null'")
+})
+
+test('undefined values', () => {
+  // undefined is treated as string (not JS undefined)
+  const one = parse(`key=undefined`)
+  assert.equal(one, { key: 'undefined' }, 'key=undefined')
+
+  const two = parse(`key={undefined}`)
+  assert.equal(two, { key: 'undefined' }, 'key={undefined}')
+
+  const three = parse(`key="undefined"`)
+  assert.equal(three, { key: 'undefined' }, 'key="undefined"')
+})
+
+test('empty string values', () => {
+  const one = parse(`key=""`)
+  assert.equal(one, { key: '' }, 'key=""')
+
+  const two = parse(`key=''`)
+  assert.equal(two, { key: '' }, "key=''")
+
+  const three = parse("key=``")
+  assert.equal(three, { key: '' }, 'key=``')
+})
+
+test('whitespace-only string values', () => {
+  const one = parse(`key="   "`)
+  assert.equal(one, { key: '   ' }, 'key="   "')
+
+  const two = parse(`key='   '`)
+  assert.equal(two, { key: '   ' }, "key='   '")
+
+  const three = parse(`key="\t\t"`)
+  assert.equal(three, { key: '\t\t' }, 'key="\\t\\t"')
+})
+
+test('empty array', () => {
+  const one = parse(`key=[]`)
+  assert.equal(one, { key: [] }, 'key=[]')
+
+  const two = parse(`key={[]}`)
+  assert.equal(two, { key: [] }, 'key={[]}')
+
+  const three = parse(`key={{[]}}`)
+  assert.equal(three, { key: [] }, 'key={{[]}}')
+})
+
+test('empty object', () => {
+  const one = parse(`key={}`)
+  assert.equal(one, { key: {} }, 'key={}')
+
+  const two = parse(`key={{}}`)
+  assert.equal(two, { key: {} }, 'key={{}}')
+})
+
+/************************************************************************************************************
+ * Edge Cases - Numeric
+ ***********************************************************************************************************/
+
+test('scientific notation', () => {
+  const one = parse(`key=1e10`)
+  assert.equal(one, { key: 1e10 }, 'key=1e10')
+
+  const two = parse(`key=1.5e-3`)
+  assert.equal(two, { key: 1.5e-3 }, 'key=1.5e-3')
+
+  const three = parse(`key=2.5E+10`)
+  assert.equal(three, { key: 2.5E+10 }, 'key=2.5E+10')
+
+  const four = parse(`key={1e10}`)
+  assert.equal(four, { key: 1e10 }, 'key={1e10}')
+})
+
+test('hex numbers', () => {
+  const one = parse(`key=0xFF`)
+  assert.equal(one, { key: 0xFF }, 'key=0xFF')
+
+  const two = parse(`key=0x1A`)
+  assert.equal(two, { key: 0x1A }, 'key=0x1A')
+})
+
+test('Infinity and NaN', () => {
+  const one = parse(`key=Infinity`)
+  assert.equal(one, { key: Infinity }, 'key=Infinity')
+
+  const two = parse(`key=-Infinity`)
+  assert.equal(two, { key: -Infinity }, 'key=-Infinity')
+
+  // NaN is treated as string "NaN" (not JS NaN)
+  const three = parse(`key=NaN`)
+  assert.equal(three, { key: 'NaN' }, 'key=NaN as string')
+})
+
+test('leading zeros', () => {
+  // Leading zeros - behavior may vary
+  const one = parse(`key=007`)
+  // Could be number 7 or string "007" depending on implementation
+  assert.ok(one.key === 7 || one.key === '007', 'key=007')
+
+  const two = parse(`key="007"`)
+  assert.equal(two, { key: '007' }, 'key="007" as string')
+})
+
+/************************************************************************************************************
+ * Edge Cases - Keys
+ ***********************************************************************************************************/
+
+test('hyphenated keys', () => {
+  const one = parse(`data-value=foo`)
+  assert.equal(one, { 'data-value': 'foo' }, 'data-value=foo')
+
+  const two = parse(`data-foo-bar=test`)
+  assert.equal(two, { 'data-foo-bar': 'test' }, 'data-foo-bar=test')
+
+  const three = parse(`a=1 data-value=foo b=2`)
+  assert.equal(three, { a: 1, 'data-value': 'foo', b: 2 }, 'mixed with hyphenated')
+})
+
+test('$ and @ prefixed keys', () => {
+  // Shell-style variables
+  const one = parse(`$HOME=/path`)
+  assert.equal(one, { '$HOME': '/path' }, '$HOME=/path')
+
+  const two = parse(`$var=value`)
+  assert.equal(two, { '$var': 'value' }, '$var=value')
+
+  // Decorator/scope style
+  const three = parse(`@decorator=true`)
+  assert.equal(three, { '@decorator': true }, '@decorator=true')
+
+  const four = parse(`@scope/pkg=1.0.0`)
+  assert.equal(four, { '@scope/pkg': '1.0.0' }, '@scope/pkg=1.0.0')
+
+  // Mixed
+  const five = parse(`a=1 $HOME=/path @test=true`)
+  assert.equal(five, { a: 1, '$HOME': '/path', '@test': true }, 'mixed')
+})
+
+test('reserved word keys', () => {
+  const one = parse(`true=false`)
+  assert.equal(one, { true: false }, 'true=false')
+
+  const two = parse(`false=true`)
+  assert.equal(two, { false: true }, 'false=true')
+
+  const three = parse(`null=123`)
+  assert.equal(three, { null: 123 }, 'null=123')
+
+  const four = parse(`undefined=value`)
+  assert.equal(four, { undefined: 'value' }, 'undefined=value')
+})
+
+test('numeric string keys', () => {
+  const one = parse(`123=value`)
+  assert.equal(one, { 123: 'value' }, '123=value')
+
+  const two = parse(`0=zero`)
+  assert.equal(two, { 0: 'zero' }, '0=zero')
+})
+
+/************************************************************************************************************
+ * Edge Cases - URLs and Special Strings
+ ***********************************************************************************************************/
+
+test('URL with ampersand unquoted', () => {
+  const one = parse(`url=https://example.com?foo=bar&baz=qux`)
+  console.log('URL with ampersand:', one)
+  assert.equal(one, { url: 'https://example.com?foo=bar&baz=qux' })
+})
+
+test('URL special characters - protocol and ports', () => {
+  assert.equal(parse(`url=https://example.com`), { url: 'https://example.com' })
+  assert.equal(parse(`url=https://example.com:8080/path`), { url: 'https://example.com:8080/path' })
+  assert.equal(parse(`url=file:///path/to/file.txt`), { url: 'file:///path/to/file.txt' })
+  assert.equal(parse(`url=data:text/plain;base64,SGVsbG8=`), { url: 'data:text/plain;base64,SGVsbG8=' })
+})
+
+test('URL special characters - query strings', () => {
+  assert.equal(parse(`url=https://example.com?query=1`), { url: 'https://example.com?query=1' })
+  assert.equal(parse(`url=https://example.com?a=1&b=2`), { url: 'https://example.com?a=1&b=2' })
+  assert.equal(parse(`url=https://example.com?empty=`), { url: 'https://example.com?empty=' })
+  assert.equal(parse(`url=https://example.com?ids[]=1&ids[]=2`), { url: 'https://example.com?ids[]=1&ids[]=2' })
+  assert.equal(parse(`url=https://example.com?filter[name]=test`), { url: 'https://example.com?filter[name]=test' })
+})
+
+test('URL special characters - fragments', () => {
+  assert.equal(parse(`url=https://example.com#section`), { url: 'https://example.com#section' })
+  assert.equal(parse(`url=https://example.com?a=1#section`), { url: 'https://example.com?a=1#section' })
+})
+
+test('URL special characters - auth and IPv6', () => {
+  assert.equal(parse(`url=https://user:pass@example.com`), { url: 'https://user:pass@example.com' })
+  assert.equal(parse(`url=https://[::1]:8080/path`), { url: 'https://[::1]:8080/path' })
+  assert.equal(parse(`url=https://[2001:db8::1]/path`), { url: 'https://[2001:db8::1]/path' })
+})
+
+test('URL special characters - encoding and delimiters', () => {
+  assert.equal(parse(`url=https://example.com/path%20with%20spaces`), { url: 'https://example.com/path%20with%20spaces' })
+  assert.equal(parse(`url=https://example.com?q=hello+world`), { url: 'https://example.com?q=hello+world' })
+  assert.equal(parse(`url=https://example.com?ids=1,2,3`), { url: 'https://example.com?ids=1,2,3' })
+  assert.equal(parse(`url=https://example.com?a=1;b=2`), { url: 'https://example.com?a=1;b=2' })
+})
+
+test('URL special characters - brackets and braces in path', () => {
+  assert.equal(parse(`url=https://example.com/api/users[0]`), { url: 'https://example.com/api/users[0]' })
+  assert.equal(parse(`url=https://example.com/api/{id}`), { url: 'https://example.com/api/{id}' })
+  assert.equal(parse(`url=https://example.com/<path>`), { url: 'https://example.com/<path>' })
+  assert.equal(parse(`url=https://example.com/(section)`), { url: 'https://example.com/(section)' })
+})
+
+test('URL special characters - misc symbols', () => {
+  assert.equal(parse(`url=https://example.com/path!`), { url: 'https://example.com/path!' })
+  assert.equal(parse(`url=https://example.com/*.txt`), { url: 'https://example.com/*.txt' })
+})
+
+test('URL quoted preserves value', () => {
+  assert.equal(parse(`url="https://example.com?a=1&b=2"`), { url: 'https://example.com?a=1&b=2' })
+  assert.equal(parse(`url='https://example.com?a=1&b=2'`), { url: 'https://example.com?a=1&b=2' })
+})
+
+test('multiple URLs in same parse', () => {
+  assert.equal(
+    parse(`url1=https://one.com url2=https://two.com`),
+    { url1: 'https://one.com', url2: 'https://two.com' }
+  )
+})
+
+test('URL with other keys', () => {
+  assert.equal(
+    parse(`url=https://example.com other=value`),
+    { url: 'https://example.com', other: 'value' }
+  )
+})
+
+test('backslash paths', () => {
+  // Parser preserves backslashes as-is (no escape processing)
+  const one = parse(`path="C:\\\\path\\\\to\\\\file"`)
+  assert.equal(one, { path: 'C:\\\\path\\\\to\\\\file' }, 'Windows path')
+
+  const two = parse(`path='C:\\\\Users\\\\name'`)
+  assert.equal(two, { path: 'C:\\\\Users\\\\name' }, 'Windows path single quotes')
+
+  // Single backslash
+  const three = parse(`path="C:\\path"`)
+  assert.equal(three, { path: 'C:\\path' }, 'single backslash')
+})
+
+test('tab characters in values', () => {
+  const one = parse(`key="with\ttab"`)
+  assert.equal(one, { key: 'with\ttab' }, 'tab in double quotes')
+
+  const two = parse(`key='with\ttab'`)
+  assert.equal(two, { key: 'with\ttab' }, 'tab in single quotes')
+})
+
+/************************************************************************************************************
+ * Edge Cases - Structural
+ ***********************************************************************************************************/
+
+test('sparse arrays', () => {
+  // Sparse array syntax - may not be supported
+  const one = parse(`key=[1,,3]`)
+  console.log('sparse array:', one)
+})
+
+test('consecutive equals', () => {
+  const one = parse(`key==value`)
+  console.log('consecutive equals:', one)
+  // Could be key="" with value as next token, or key="=value"
+})
+
+test('object with numeric keys', () => {
+  const one = parse(`key={0: "zero", 1: "one"}`)
+  assert.equal(one, { key: { 0: 'zero', 1: 'one' } }, 'numeric object keys')
+})
+
+test('deeply nested arrays', () => {
+  const one = parse(`key=[[[1,2],[3,4]]]`)
+  assert.equal(one, { key: [[[1, 2], [3, 4]]] }, 'deeply nested arrays')
+})
+
+/************************************************************************************************************
+ * Edge Cases - Input
+ ***********************************************************************************************************/
+
+test('whitespace-only input', () => {
+  const one = parse(`   `)
+  assert.equal(one, {}, 'whitespace only')
+
+  const two = parse(`\t\t\t`)
+  assert.equal(two, {}, 'tabs only')
+
+  const three = parse(`\n\n\n`)
+  assert.equal(three, {}, 'newlines only')
+})
+
+test('empty and null input', () => {
+  const one = parse(``)
+  assert.equal(one, {}, 'empty string')
+
+  const two = parse(null)
+  assert.equal(two, {}, 'null input')
+
+  const three = parse(undefined)
+  assert.equal(three, {}, 'undefined input')
+})
+
+/************************************************************************************************************
+ * Edge Cases - Boolean Case Sensitivity
+ ***********************************************************************************************************/
+
+test('boolean case sensitivity', () => {
+  // Uppercase
+  const one = parse(`key=TRUE`)
+  console.log('TRUE:', one)
+
+  const two = parse(`key=FALSE`)
+  console.log('FALSE:', two)
+
+  // Mixed case
+  const three = parse(`key=True`)
+  console.log('True:', three)
+
+  const four = parse(`key=False`)
+  console.log('False:', four)
+})
+
+/************************************************************************************************************
+ * Edge Cases - Arrow Functions
+ ***********************************************************************************************************/
+
+test('arrow function with params', () => {
+  const one = parse(`fn={(x, y) => x + y}`)
+  assert.equal(one, { fn: '(x, y) => x + y' }, 'arrow with params')
+
+  const two = parse(`fn={(x) => x * 2}`)
+  assert.equal(two, { fn: '(x) => x * 2' }, 'arrow single param')
+})
+
+test('async arrow function', () => {
+  const one = parse(`fn={async () => await fetch()}`)
+  assert.equal(one, { fn: 'async () => await fetch()' }, 'async arrow')
+
+  const two = parse(`fn={async (url) => await fetch(url)}`)
+  assert.equal(two, { fn: 'async (url) => await fetch(url)' }, 'async arrow with param')
+})
+
+/************************************************************************************************************
+ * Edge Cases - Self-closing JSX
+ ***********************************************************************************************************/
+
+test('self-closing JSX', () => {
+  const one = parse(`elem={<Component />}`)
+  assert.equal(one, { elem: '<Component />' }, 'self-closing JSX')
+
+  const two = parse(`elem={<Input type="text" />}`)
+  assert.equal(two, { elem: '<Input type="text" />' }, 'self-closing with props')
+
+  const three = parse(`elem={<br/>}`)
+  assert.equal(three, { elem: '<br/>' }, 'self-closing no space')
+})
+
+/************************************************************************************************************
+ * Edge Cases - Mixed content
+ ***********************************************************************************************************/
+
+test('multiple values same line complex', () => {
+  const one = parse(`a=1 b="two" c=true d=[1,2] e={foo: 'bar'}`)
+  assert.equal(one, {
+    a: 1,
+    b: 'two',
+    c: true,
+    d: [1, 2],
+    e: { foo: 'bar' }
+  }, 'mixed types single line')
+})
+
+test('date strings', () => {
+  const one = parse(`date=2024-01-15`)
+  assert.equal(one, { date: '2024-01-15' }, 'date string')
+
+  const two = parse(`date="2024-01-15T10:30:00Z"`)
+  assert.equal(two, { date: '2024-01-15T10:30:00Z' }, 'ISO date string')
+})
+
+/************************************************************************************************************
+ * Edge Cases - Large strings
+ ***********************************************************************************************************/
+
+test('large JSON uses JSON.parse fallback', () => {
+  const largeJson = fs.readFileSync(path.join(__dirname, 'fixtures/1-point-8-mb.json'), 'utf8')
+  assert.ok(largeJson.length > 20000, 'fixture is large enough')
+
+  const result = parse(largeJson)
+  assert.ok(typeof result === 'object', 'parsed as object')
+  assert.ok(Object.keys(result).length > 0, 'has keys')
+})
+
+test('large invalid string throws helpful error', () => {
+  const largeInvalid = 'x'.repeat(25000)
+  assert.throws(
+    () => parse(largeInvalid),
+    /String is too long.*for forgiving parser.*JSON\.parse failed/
+  )
+})
+
 test.run()

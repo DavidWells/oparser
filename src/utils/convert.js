@@ -191,6 +191,11 @@ function convert(value) {
     return true
   }
 
+  // Empty or whitespace-only strings should stay as-is, not become 0
+  if (value === '' || /^\s+$/.test(value)) {
+    return value
+  }
+
   const isNumber = Number(value)
   if (typeof isNumber === 'number' && !isNaN(isNumber)) {
     return isNumber
