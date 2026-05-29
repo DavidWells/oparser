@@ -5,7 +5,7 @@ const { replaceInnerCharPattern } = require('./utils/replace-inner')
 const WHITE_SPACE = /[\s\n\r]/
 const SURROUNDING_QUOTES = /^("|'|`)|("|'|`)$/g
 // const SURROUNDING_QUOTES = /^("|'|`)(?:[^\1])*(\1)$/g
-const VALID_KEY_CHAR = /^[A-Za-z0-9_@$]/
+const VALID_KEY_CHAR = /^[A-Za-z0-9_@$¡-￿]/
 const VALID_VALUE_CHAR = /(.+)/
 const TRAILING_COMMAS = /,+$/
 const NOT_OBJECT_LIKE = /^{[^:,]+}/
@@ -301,7 +301,7 @@ const DEBUG = false
  * @returns {T}
  */
 function parse(s) {
-  if (typeof s === 'undefined' || s === null || s === '') {
+  if (typeof s !== 'string' || s === '') {
     return {}
   }
 
@@ -1109,18 +1109,52 @@ function isBalanced(str, open = '{', ignoreQuotedBrackets = false) {
 function options(input = '', ...substitutions) {
   const rendered = substitutions.map((value) => {
     if (typeof value === 'string') {
-      return /\s/.test(value) ? JSON.stringify(value) : value
+      return /\s/.test(value) ? encodeOptionsString(value) : value
     }
     if (typeof value === 'undefined') {
       return ''
     }
-    if (value === null || typeof value === 'object') {
-      return JSON.stringify(value)
+    if (value === null) {
+      return 'null'
+    }
+    if (typeof value === 'object') {
+      return encodeOptionsValue(value)
     }
     return String(value)
   })
   let str = String.raw(input, ...rendered)
   return parse(str)
+}
+
+/* Encode a string as an oparser-readable quoted literal. Picks a quote that
+   doesn't appear inside the value so round-tripping doesn't need backslash
+   escaping (which the forgiving parser doesn't unescape). */
+function encodeOptionsString(value) {
+  if (value.indexOf('"') === -1) return `"${value}"`
+  if (value.indexOf("'") === -1) return `'${value}'`
+  if (value.indexOf('`') === -1) return `\`${value}\``
+  return `"${value.split('"').join('\\"')}"`
+}
+
+function encodeOptionsValue(value) {
+  if (value === null) return 'null'
+  if (Array.isArray(value)) {
+    return '[' + value.map(encodeOptionsValue).join(', ') + ']'
+  }
+  const t = typeof value
+  if (t === 'string') return encodeOptionsString(value)
+  if (t === 'number' || t === 'boolean') return String(value)
+  if (t === 'object') {
+    const parts = Object.keys(value).map((k) => {
+      return encodeOptionsKey(k) + ': ' + encodeOptionsValue(value[k])
+    })
+    return '{ ' + parts.join(', ') + ' }'
+  }
+  return ''
+}
+
+function encodeOptionsKey(key) {
+  return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key) ? key : encodeOptionsString(key)
 }
 
 module.exports = {

@@ -48,4 +48,18 @@ test('Template tag substitutions', () => {
   })
 })
 
+test('Template tag handles objects with embedded quotes', () => {
+  const one = options`a=${{ s: 'a"b' }}`
+  assert.equal(one, { a: { s: 'a"b' } })
+
+  const two = options`a=${{ s: "a'b" }}`
+  assert.equal(two, { a: { s: "a'b" } })
+
+  const three = options`a=${[{ x: 'has "quote"' }]}`
+  assert.equal(three, { a: [{ x: 'has "quote"' }] })
+
+  const four = options`a=${{ 'spaced key': 1, normal: 2 }}`
+  assert.equal(four, { a: { 'spaced key': 1, normal: 2 } })
+})
+
 test.run()

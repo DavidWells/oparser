@@ -350,6 +350,37 @@ test('stringify empty object', () => {
   assert.is(stringValueTwo, 'hello="world"')
 })
 
+test('stringify with non-object inputs returns empty string', () => {
+  assert.is(stringify(null), '', 'null')
+  assert.is(stringify(undefined), '', 'undefined')
+  assert.is(stringify('string'), '', 'string')
+  assert.is(stringify(123), '', 'number')
+  assert.is(stringify(true), '', 'boolean')
+})
+
+test('stringify round-trips strings with embedded quotes', () => {
+  /* Round-trip works as long as at least one of the three quote chars is
+     absent from the value. Values containing all three are a known
+     limitation - the forgiving parser does not unescape backslashes. */
+  const cases = [
+    { name: 'inner double quote', input: { msg: 'a"b' } },
+    { name: 'inner single quote', input: { msg: "a'b" } },
+    { name: 'inner backtick', input: { msg: 'a`b' } },
+    { name: 'leading + trailing quote', input: { msg: '"quoted"' } },
+  ]
+  for (const { name, input } of cases) {
+    const out = stringify(input, { separator: ' ' })
+    assert.equal(parse(out), input, name)
+  }
+})
+
+test('stringify does not mutate input', () => {
+  const input = { a: 1, b: { c: [1, 2] }, d: 'text' }
+  const snapshot = JSON.parse(JSON.stringify(input))
+  stringify(input, { separator: ' ' })
+  assert.equal(input, snapshot)
+})
+
 test('stringify option formats', () => {
   const joinerValue = stringify({ a: 1, b: 'two' }, { joiner: ':', separator: ' ' })
   assert.is(joinerValue, 'a:1 b:"two"')

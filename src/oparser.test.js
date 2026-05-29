@@ -196,18 +196,6 @@ test('Escape conflicting double quote chars', () => {
 })
 
 
-test('Escape conflicting double quote chars', () => {
-  // const eight = parse(`title='Wow \\'this\\' is great'`)
-  // assert.equal(eight, {
-  //   title: "Wow 'this' is great",
-  // }, 'eight')
-
-  // const nine = parse(`title="Wow \\"this\\" is great"`)
-  // assert.equal(nine, {
-  //   title: 'Wow "this" is great',
-  // }, 'eight')
-})
-
 /************************************************************************************************************
  * Number values
  ***********************************************************************************************************/
@@ -1448,10 +1436,10 @@ test('Object booleans are case-insensitive when unquoted', () => {
 
 
 test('Object jsx style weird yyy', () => {
-  const d = parse(`style='color: red;' color="b'lue"`)
+  const d = parse(`style='color: blue;' color="b'lue"`)
   // console.log('d', d)
   assert.equal(d, {
-    style: 'color: red;',
+    style: 'color: blue;',
     color: "b'lue",
   }, 'd')
 })
@@ -1459,13 +1447,13 @@ test('Object jsx style weird yyy', () => {
 test('Handles unbalanced single quote in multiline', () => {
   const d = parse(`
 class='foo' 
-style='color: red;'
+style='color: blue;'
 color="b'lue"
 `)
   // console.log('d', d)
   assert.equal(d, {
     class: 'foo',
-    style: 'color: red;',
+    style: 'color: blue;',
     color: "b'lue",
   }, 'd')
 })
@@ -1473,13 +1461,13 @@ color="b'lue"
 test('Handles unbalanced double quote in multiline', () => {
   const d = parse(`
 class="foo" 
-style="color: red;"
+style="color: blue;"
 color='b"lue'
 `)
   // console.log('d', d)
   assert.equal(d, {
     class: 'foo',
-    style: 'color: red;',
+    style: 'color: blue;',
     color: 'b"lue',
   }, 'd')
 })
@@ -1487,7 +1475,7 @@ color='b"lue'
 test('Multiline jsx style prop', () => {
   const five = `
   class='foo'
-  style='color: red; margin: 20px; display: block;'
+  style='color: blue; margin: 20px; display: block;'
   color="b'lue"
   funky={\`
   <Wow>
@@ -1500,7 +1488,7 @@ test('Multiline jsx style prop', () => {
   // console.log('x', x)
   assert.equal(x, {
     class: 'foo',
-    style: 'color: red; margin: 20px; display: block;',
+    style: 'color: blue; margin: 20px; display: block;',
     color: "b'lue",
     funky: `
   <Wow>
@@ -1513,7 +1501,7 @@ test('Multiline jsx style prop', () => {
 
 test('Object jsx style weird xxx', () => {
   const d = parse(`
-  style='color: red;'
+  style='color: blue;'
   color="b'lue"
   what='
   import {foo} from 'lodash'
@@ -1523,7 +1511,7 @@ import {zaz} from 'lodash'
 `)
   // console.log('d', d)
   assert.equal(d, {
-    style: 'color: red;',
+    style: 'color: blue;',
     color: "b'lue",
     what: `
   import {foo} from 'lodash'
@@ -1649,25 +1637,6 @@ test('Object jsx style weird', () => {
   }, 'd')
 })
 
-
-test('Object in quotes is string', () => {
-  const a = parse(`key="{ xjsjsj }"`)
-  assert.equal(a, {
-    key: "{ xjsjsj }"
-  }, 'a')
-  const b = parse(`key='{ foo:bar }'`)
-  assert.equal(b, {
-    key: "{ foo:bar }"
-  }, 'b')
-  const c = parse(`key='{ "foo": "bar" }'`)
-  assert.equal(c, {
-    key: '{ "foo": "bar" }'
-  }, 'c')
-  const d = parse(`key='{{ "foo": "bar" }}'`)
-  assert.equal(d, {
-    key: '{{ "foo": "bar" }}'
-  }, 'd')
-})
 
 test('Object in quotes is string', () => {
   const a = parse(`key="{ xjsjsj }"`)
@@ -1975,38 +1944,6 @@ test('Weird ones', () => {
   })
 })
 
-test('Handles inner brackets []', () => {
-  const answer = {
-    nice: '[whatever]x',
-    funny: '[[coool]]',
-  }
-  const one = parse(`
-  nice='[whatever]x'
-  funny="[[coool]]"
-  `)
-  // console.log('parsedValue', parsedValue)
-  assert.equal(one, answer)
-})
-
-test('Handles variable syntax values', () => {
-  const one = parse("nice=${file(./foo.js)}")
-  assert.equal(one, {
-    nice: '${file(./foo.js)}',
-  })
-  const two = parse("nice='${file(./foo.js)}'")
-  assert.equal(two, {
-    nice: '${file(./foo.js)}',
-  })
-  const three = parse(`nice='\${file("./foo.js")}'`)
-  assert.equal(three, {
-    nice: '${file("./foo.js")}',
-  })
-  const four = parse(`nice='\${self:custom.stage}'`)
-  assert.equal(four, {
-    nice: '${self:custom.stage}',
-  })
-})
-
 test('Handles multiline values lorum ipsum', () => {
   const one = parse(`
   baz="yolo"
@@ -2179,7 +2116,7 @@ test('Handles Multiline breaks', () => {
   })
 })
 
-test('reactProp func', () => {
+test('reactProp func quoted body', () => {
   const five = `isCool onClick={"() => { console.log('h i')}"}`
   // console.log('five', five)
   assert.equal(parse(five), {
@@ -3815,6 +3752,40 @@ test('large invalid string throws helpful error', () => {
     () => parse(largeInvalid),
     /String is too long.*for forgiving parser.*JSON\.parse failed/
   )
+})
+
+/************************************************************************************************************
+ * Edge Cases - Non-string input
+ ***********************************************************************************************************/
+
+test('parse with non-string inputs returns {}', () => {
+  assert.equal(parse(123), {}, 'number')
+  assert.equal(parse({}), {}, 'object')
+  assert.equal(parse([]), {}, 'array')
+  assert.equal(parse(true), {}, 'boolean')
+  assert.equal(parse(false), {}, 'false')
+  assert.equal(parse(() => {}), {}, 'function')
+})
+
+test('parseValue with non-string inputs passes through', () => {
+  assert.equal(parseValue(123), 123)
+  assert.equal(parseValue(true), true)
+  assert.equal(parseValue(false), false)
+  const obj = { a: 1 }
+  assert.is(parseValue(obj), obj, 'object identity')
+})
+
+/************************************************************************************************************
+ * Edge Cases - Unicode keys
+ ***********************************************************************************************************/
+
+test('unicode keys', () => {
+  assert.equal(parse('é=value'), { 'é': 'value' }, 'latin-1 supplement')
+  assert.equal(parse('café=hot'), { 'café': 'hot' }, 'mixed ascii+latin')
+  assert.equal(parse('日本=val'), { '日本': 'val' }, 'CJK')
+  assert.equal(parse('αβ=v'), { 'αβ': 'v' }, 'greek')
+  assert.equal(parse('🚀=value'), { '🚀': 'value' }, 'emoji (surrogate pair)')
+  assert.equal(parse('a=1 é=2'), { a: 1, 'é': 2 }, 'mixed with ascii keys')
 })
 
 test.run()

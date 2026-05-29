@@ -17,6 +17,7 @@ const TRAILING_OBJECT_COMMAS = /(?:,[^\S]*)+(})(,*)\s*$/
 const TRAILING_ARRAY_COMMAS_GLOBAL = /(?:,+[^\S]*)+?](,)*\s*/gm
 
 const TRIM_INNER_TRAILING_OBJECT_COMMA = /(,+[^\S]*)*?}\s*/m
+const HAS_JSON_TOKEN = /[{}\[\]"':,]/
   // // Remove trailing object commas
   // value = value.replace(/(?:,*[^\S]*)*?}(,)*/gm, '}$1')
   // // Remove trailing array commas
@@ -423,6 +424,9 @@ function convert(value) {
   if (/^true$/i.test(value)) {
     return true
   }
+  if (value === 'null') {
+    return null
+  }
 
   // Empty or whitespace-only strings should stay as-is, not become 0
   if (value === '' || /^\s+$/.test(value)) {
@@ -441,6 +445,13 @@ function convert(value) {
   // remove double escaped quotes
   if (value.indexOf('\\"') > -1) {
     value = value.replace(/\\"/g, '\"') // .replace(/\\\"/g, '\"')
+  }
+
+  /* Skip loose JSON parser when value has no JSON structural characters.
+     parseJSON only changes plain strings if they're whitespace-padded booleans,
+     which the regex checks above already handled for trimmed values. */
+  if (!HAS_JSON_TOKEN.test(value)) {
+    return value
   }
 
   let cleaner

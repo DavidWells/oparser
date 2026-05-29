@@ -42,6 +42,7 @@ parse(`
 | Comments in config text | Removes `//`, `/* ... */`, and `#` comments outside quoted values |
 | JSX-ish values | Keeps JSX fragments and arrow functions as strings |
 | Large JSON values | Fast-parses raw JSON and `key = <large json>` without using the forgiving scanner |
+| Unicode keys | Accepts emoji, accented characters, and CJK as bare keys |
 
 ## API
 
@@ -62,12 +63,15 @@ parse('name=bob active=true count=3')
 // { name: 'bob', active: true, count: 3 }
 ```
 
-Empty, `null`, and `undefined` input returns `{}`.
+Empty, `null`, `undefined`, or any non-string input returns `{}`.
 
 ```js
 parse('')
 parse(null)
 parse(undefined)
+parse(123)
+parse({})
+parse([])
 // {}
 ```
 
@@ -79,6 +83,14 @@ parseValue('[one, two, 3]')
 
 parseValue('{ a: b, enabled: true }')
 // { a: 'b', enabled: true }
+```
+
+Non-string values pass through unchanged.
+
+```js
+parseValue(null)       // null
+parseValue(123)        // 123
+parseValue({ a: 1 })   // { a: 1 }
 ```
 
 ### `options` template tag
@@ -94,7 +106,38 @@ const config = options`
 // { foo: 'bar', enabled: true }
 ```
 
+Object and array substitutions are encoded so embedded quote characters round-trip cleanly.
+
+```js
+options`name=${'David Wells'} config=${{ s: 'a"b' }}`
+// { name: 'David Wells', config: { s: 'a"b' } }
+```
+
 ## Parsing Behavior
+
+### Keys
+
+Bare keys accept ASCII letters, digits, `_`, `@`, `$`, and any non-ASCII character above U+00A0 (Latin-1 supplement, CJK, emoji, etc.). After the first character, anything that is not whitespace, `=`, or a structural character is kept.
+
+```js
+parse(`name=bob`)            // { name: 'bob' }
+parse(`data-id=42`)          // { 'data-id': 42 }
+parse(`$HOME=/tmp`)          // { '$HOME': '/tmp' }
+parse(`@scope/pkg=1.0.0`)    // { '@scope/pkg': '1.0.0' }
+parse(`café=hot`)            // { café: 'hot' }
+parse(`日本=val`)            // { '日本': 'val' }
+parse(`🚀=launch`)           // { '🚀': 'launch' }
+```
+
+Quoted keys preserve spaces and characters that would otherwise terminate a bare key.
+
+```js
+parse(`"display name"="David Wells"`)
+// { 'display name': 'David Wells' }
+
+parse(`"a=b"=1`)
+// { 'a=b': 1 }
+```
 
 ### Strings
 
@@ -283,6 +326,15 @@ parse(str)
 // same shape as input
 ```
 
+Quoted strings get a quote character that does not appear inside the value, so embedded quotes round-trip without escapes.
+
+```js
+stringify({ msg: 'a"b' }, { separator: ' ' })  // msg='a"b'
+stringify({ msg: "a'b" }, { separator: ' ' })  // msg="a'b"
+```
+
+Non-object inputs (`null`, `undefined`, strings, numbers, booleans) return `''`. `null`, `undefined`, function values, and empty arrays/objects are filtered from output.
+
 ## Design Philosophy
 
 | Principle | Meaning |
@@ -290,7 +342,8 @@ parse(str)
 | Forgiving first | Prefer useful parsing for human-written config over strict grammar errors |
 | Preserve quoted intent | If a value is quoted, keep it as a string |
 | Parse obvious types | Unquoted booleans, numbers, arrays, objects, and `null` become native values |
-| Avoid slow paths for large JSON | Use `JSON.parse` for raw or wrapped JSON payloads |
+| Unicode-friendly keys | Latin, CJK, and emoji are valid bare key characters |
+| Skip the loose parser when possible | Plain strings and large raw JSON bypass the forgiving parser path |
 | Keep weird-but-common JSX cases working | React-style object props, elements, and handlers are supported as practical input |
 
 ## Comparison
@@ -366,6 +419,18 @@ Use `parseValue(value)`.
 parseValue('{ a: b }')
 // { a: 'b' }
 ```
+
+### Are non-ASCII keys supported?
+
+Yes. Emoji, accented characters, and CJK characters all work as bare keys. See the Keys section above.
+
+### What if a string value contains every quote type?
+
+Stringify picks `"`, `'`, or `` ` `` based on which is absent from the value. If a value contains all three, the chosen quote is backslash-escaped on the way out, but the forgiving parser does not unescape on the way back, so a round-trip in that corner case is lossy. Prefer keeping at least one quote character out of your values, or wrap the value yourself.
+
+### What happens if I pass a non-string to `parse`?
+
+`parse` returns `{}` for `null`, `undefined`, numbers, booleans, plain objects, arrays, and functions. Only string input is parsed.
 
 ### Is this safe for untrusted server input?
 

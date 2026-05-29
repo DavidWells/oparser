@@ -12,7 +12,7 @@
  * @returns {string}
  */
 function stringify(obj, opts = {}) {
-  if (typeof obj !== 'object') return ''
+  if (obj === null || typeof obj !== 'object') return ''
   const joiner = opts.joiner || '='
   if (typeof opts.asJs === 'undefined') {
     opts.asJs = true
@@ -252,22 +252,27 @@ function bracketSpacing(str) {
 function ensureQuote(value, open = '"', close) {
   let i = -1
   const result = []
-  const end = close || open
   if (typeof value === 'string') {
-    return startChar(value, open) + value + endChar(value, end)
+    return wrapWithSafeQuote(value, open, close)
   }
   while (++i < value.length) {
-    result[i] = startChar(value[i], open) + value[i] + endChar(value[i], end)
+    result[i] = wrapWithSafeQuote(value[i], open, close)
   }
   return result
 }
 
-function startChar(str, char) {
-  return (str[0] === char) ? '' : char
-}
-
-function endChar(str, char) {
-  return (str[str.length -1] === char) ? '' : char
+function wrapWithSafeQuote(value, open, close) {
+  const end = close || open
+  /* If preferred quote appears inside value, pick a non-conflicting quote so
+     the parser round-trips cleanly. Last resort: escape the chosen quote. */
+  if (open === end && value.indexOf(open) > -1) {
+    if (open !== '"' && value.indexOf('"') === -1) return `"${value}"`
+    if (open !== "'" && value.indexOf("'") === -1) return `'${value}'`
+    if (open !== '`' && value.indexOf('`') === -1) return `\`${value}\``
+    const escaped = value.split(open).join('\\' + open)
+    return open + escaped + end
+  }
+  return open + value + end
 }
 
 module.exports = {
