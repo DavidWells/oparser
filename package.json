@@ -33,6 +33,6 @@
     "uvu": "^0.5.1"
   },
   "dependencies": {
-    "json-alexander": "^0.1.13"
+    "json-alexander": "^0.1.14"
   }
 }
