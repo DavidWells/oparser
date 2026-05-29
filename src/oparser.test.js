@@ -6,6 +6,17 @@ const { parse, parseValue } = require('./')
 const { convert } = require('./utils/convert')
 // const { parse, parseValue } = require('../')
 
+function assertParseCases(cases) {
+  cases.forEach(({ name, input, expected }) => {
+    assert.equal(parse(input), expected, name)
+  })
+}
+
+function assertParseValueCases(cases) {
+  cases.forEach(({ name, input, expected }) => {
+    assert.equal(parseValue(input), expected, name)
+  })
+}
 
 /************************************************************************************************************
  * String values
@@ -507,6 +518,59 @@ boo="hello"
   })
 })
 
+test('Comments with composite values', () => {
+  assertParseCases([
+    {
+      name: 'array before slash comment',
+      input: `items=["a,b", "c]d", TRUE] // ignored\nnext=1`,
+      expected: {
+        items: ['a,b', 'c]d', true],
+        next: 1
+      }
+    },
+    {
+      name: 'object before block comment',
+      input: `style={{ label: "a}b", enabled: FALSE }} /* ignored */\nnext=ok`,
+      expected: {
+        style: { label: 'a}b', enabled: false },
+        next: 'ok'
+      }
+    },
+    {
+      name: 'comment delimiters inside quoted composite values',
+      input: `
+items=["keep # hash", "keep // slash", "keep /* block */", ok]
+obj={{ a: "keep # hash", b: "keep // slash", c: "keep /* block */" }}
+`,
+      expected: {
+        items: ['keep # hash', 'keep // slash', 'keep /* block */', 'ok'],
+        obj: {
+          a: 'keep # hash',
+          b: 'keep // slash',
+          c: 'keep /* block */'
+        }
+      }
+    },
+    {
+      name: 'multiline array with comments between values',
+      input: `
+items=[
+  one,
+  // two,
+  three, # four
+  "five # six",
+  TRUE
+]
+next=False
+`,
+      expected: {
+        items: ['one', 'three', 'five # six', true],
+        next: false
+      }
+    }
+  ])
+})
+
 /************************************************************************************************************
  * Edge cases
  ***********************************************************************************************************/
@@ -970,6 +1034,26 @@ test('Array strings preserve quoted brackets', () => {
   })
 })
 
+test('Array booleans are case-insensitive when unquoted', () => {
+  assertParseCases([
+    {
+      name: 'single line array booleans',
+      input: `key=[TRUE, False, true, false, "TRUE", 'False']`,
+      expected: {
+        key: [true, false, true, false, 'TRUE', 'False']
+      }
+    },
+    {
+      name: 'braced array booleans',
+      input: `key={[TRUE, False, "TRUE", 'False']} next=true`,
+      expected: {
+        key: [true, false, 'TRUE', 'False'],
+        next: true
+      }
+    }
+  ])
+})
+
 test('Mixed array syntax', () => {
   const smallExample = `
   lines=[3, 7]
@@ -1330,6 +1414,36 @@ test('Object strings preserve quoted curlies', () => {
     key: { a: 'b}c', d: 1 },
     next: 2
   })
+})
+
+test('Object booleans are case-insensitive when unquoted', () => {
+  assertParseCases([
+    {
+      name: 'single braced object booleans',
+      input: `key={ enabled: TRUE, disabled: False, quoted: "TRUE", quotedTwo: 'False' }`,
+      expected: {
+        key: {
+          enabled: true,
+          disabled: false,
+          quoted: 'TRUE',
+          quotedTwo: 'False'
+        }
+      }
+    },
+    {
+      name: 'double braced object booleans and reserved keys',
+      input: `key={{ TRUE: value, False: other, enabled: TRUE, disabled: False }} next=FALSE`,
+      expected: {
+        key: {
+          TRUE: 'value',
+          False: 'other',
+          enabled: true,
+          disabled: false
+        },
+        next: false
+      }
+    }
+  ])
 })
 
 
@@ -3474,6 +3588,26 @@ test('boolean case sensitivity', () => {
   assert.equal(six, { key: false })
   assert.equal(parse(`key="TRUE"`), { key: 'TRUE' })
   assert.equal(parse(`key='False'`), { key: 'False' })
+})
+
+test('parseValue composite booleans are case-insensitive when unquoted', () => {
+  assertParseValueCases([
+    {
+      name: 'parseValue array booleans',
+      input: `[TRUE, False, "TRUE", 'False']`,
+      expected: [true, false, 'TRUE', 'False']
+    },
+    {
+      name: 'parseValue object booleans',
+      input: `{ enabled: TRUE, disabled: False, quoted: "TRUE", quotedTwo: 'False' }`,
+      expected: {
+        enabled: true,
+        disabled: false,
+        quoted: 'TRUE',
+        quotedTwo: 'False'
+      }
+    }
+  ])
 })
 
 /************************************************************************************************************

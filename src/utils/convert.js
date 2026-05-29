@@ -227,6 +227,74 @@ function shouldUseArrayFallback(value, parsed) {
   })
 }
 
+function normalizeLooseBooleanLiterals(value) {
+  if (!isArrayLike(value) && !isObjectLike(value)) {
+    return value
+  }
+
+  const booleanLiteralPattern = /\b(?:true|false)\b/ig
+  let booleanLiteral
+  let hasNonLowercaseBoolean = false
+  while ((booleanLiteral = booleanLiteralPattern.exec(value))) {
+    if (booleanLiteral[0] !== booleanLiteral[0].toLowerCase()) {
+      hasNonLowercaseBoolean = true
+      break
+    }
+  }
+
+  if (!hasNonLowercaseBoolean) {
+    return value
+  }
+
+  let result = ''
+  let quote = ''
+  let escape = false
+  let previousSignificant = ''
+
+  for (let i = 0; i < value.length; i++) {
+    const char = value[i]
+
+    if (quote) {
+      result += char
+      if (escape) {
+        escape = false
+      } else if (char === '\\') {
+        escape = true
+      } else if (char === quote) {
+        quote = ''
+      }
+      continue
+    }
+
+    if (char === '"' || char === "'" || char === '`') {
+      quote = char
+      result += char
+      continue
+    }
+
+    const literal = value.slice(i).match(/^(true|false)\b/i)
+    const nextChar = literal ? value[i + literal[0].length] : ''
+    const hasLiteralTerminator = !nextChar || /[\s,\]}]/.test(nextChar)
+    if (
+      literal &&
+      hasLiteralTerminator &&
+      (previousSignificant === ':' || previousSignificant === '[' || previousSignificant === ',')
+    ) {
+      result += literal[0].toLowerCase()
+      i += literal[0].length - 1
+      previousSignificant = literal[0].slice(-1).toLowerCase()
+      continue
+    }
+
+    result += char
+    if (!/\s/.test(char)) {
+      previousSignificant = char
+    }
+  }
+
+  return result
+}
+
 function cleanObjectString(value) {
   return value
       .replace(/\n/g, '\\n')
@@ -400,6 +468,7 @@ function convert(value) {
         // console.log('cleaner', value)
       }
       // console.log('value', value)
+      value = normalizeLooseBooleanLiterals(value)
       const val = parseJSON(value) // last attempt to format an object like { one: two }
       if (isArrayLike(value) && shouldUseArrayFallback(value, val)) {
         return parseArrayString(value)
