@@ -30,6 +30,12 @@ const BRACKET_TYPES = {
   '[': ']',
 }
 
+const QUOTE_CHARS = {
+  "'": true,
+  '"': true,
+  '`': true,
+}
+
 function removeTempCharacters(val, rep) {
   if (typeof val === 'string') {
     return val
@@ -137,6 +143,10 @@ function parse(s) {
     try {
       return JSON.parse(str)
     } catch (e) {
+      const largeKeyValue = parseLargeKeyValueJSON(str)
+      if (largeKeyValue) {
+        return largeKeyValue
+      }
       throw new Error(`String is too long (${str.length} chars) for forgiving parser. JSON.parse failed: ${e.message}`)
     }
   }
@@ -388,6 +398,7 @@ function parse(s) {
   let keyIsOpen = false
   let valueIsOpen = false
   let openInnerQuote = ''
+  let valueUsesInnerQuoteTracking = false
 
   function save(key, value, from) {
     /* Debug values
@@ -400,6 +411,8 @@ function parse(s) {
     bufferValue = ''
     keyIsOpen = true
     valueIsOpen = false
+    openInnerQuote = ''
+    valueUsesInnerQuoteTracking = false
   }
 
   for (let i = 0; i < str.length; i++) {
@@ -486,10 +499,31 @@ function parse(s) {
       //   console.log(`valueIsOpen openQuote >>>> ${openQuote}` )
       // }
 
+      if (
+        (openQuote === '[' && (valueUsesInnerQuoteTracking || shouldTrackSimpleArrayQuote(bufferValue))) ||
+        (openQuote === '{' && (valueUsesInnerQuoteTracking || shouldTrackSimpleObjectQuote(bufferValue)))
+      ) {
+        if (openInnerQuote) {
+          bufferValue+= char
+          if (char === openInnerQuote && prevChar !== '\\') {
+            openInnerQuote = ''
+          }
+          continue
+        }
+
+        if (QUOTE_CHARS[char]) {
+          valueUsesInnerQuoteTracking = true
+          openInnerQuote = char
+          bufferValue+= char
+          continue
+        }
+      }
+
       /* If opening bracket is brackets {}. Ensure balance */
       if (
-        openQuote === '{' && char === '}' && (!nextChar || nextChar !== '}') || 
-        openQuote === '[' && char === ']' && (!nextChar || nextChar !== ']')
+        !openInnerQuote &&
+        (openQuote === '{' && char === '}' && (!nextChar || nextChar !== '}') ||
+        openQuote === '[' && char === ']' && (!nextChar || nextChar !== ']'))
       ) {
         /* Debug object values
         console.log('{} bufferValue', bufferValue)
@@ -504,9 +538,14 @@ function parse(s) {
           save(bufferKey, preFormat(trimBrackets(bufferValue, '{', '}')), 'NOT_OBJECT_LIKE')
           continue;
         }
+
+        if (openQuote === '{' && isLooseCurlyScalar(bufferValue)) {
+          save(bufferKey, preFormat(bufferValue), 'LOOSE_CURLY_SCALAR')
+          continue
+        }
         // console.log('hang')
         const theOpenQuote = START_WITH_PAREN.test(bufferValue) && !ASYNC_ARROW.test(bufferValue) ? '(' : openQuote
-        const newBalance = isBalanced(bufferValue, theOpenQuote)
+        const newBalance = isBalanced(bufferValue, theOpenQuote, valueUsesInnerQuoteTracking)
 
         if (newBalance) {
           const openIsBracket = openQuote === '['
@@ -637,6 +676,27 @@ function parseValue(value) {
   return parse(`internal=${value.trim()}`).internal
 }
 
+function parseLargeKeyValueJSON(str) {
+  const eq = str.indexOf('=')
+  if (eq === -1) {
+    return null
+  }
+
+  const key = str.slice(0, eq).trim()
+  const value = str.slice(eq + 1).trim()
+  const first = value[0]
+  const last = value[value.length - 1]
+  if (!key || !((first === '{' && last === '}') || (first === '[' && last === ']'))) {
+    return null
+  }
+
+  try {
+    return { [key]: JSON.parse(value) }
+  } catch (e) {
+    return null
+  }
+}
+
 function preFormat(val, quoteType) {
   // console.log('preFormat start', val, quoteType)
   let value = removeTempCharacters(val).replace(TRAILING_COMMAS, '')
@@ -714,6 +774,29 @@ function isJSXElement(value) {
   );
 }
 
+function isLooseCurlyScalar(value) {
+  const trimmed = value.trim()
+  if (!trimmed || trimmed.indexOf('\n') > -1) return false
+  if (START_WITH_PAREN.test(value) || /^\s*</.test(value)) return false
+  if (trimmed.indexOf(':') > -1 || trimmed.indexOf(',') > -1) return false
+
+  const open = (trimmed.match(/{/g) || []).length
+  const close = (trimmed.match(/}/g) || []).length
+  return close > open
+}
+
+function shouldTrackSimpleArrayQuote(value) {
+  return value.indexOf('{') === -1 && value.indexOf('[') === -1
+}
+
+function shouldTrackSimpleObjectQuote(value) {
+  const trimmed = value.trimStart()
+  return trimmed.indexOf('\n') === -1 &&
+    trimmed.indexOf('<') === -1 &&
+    !START_WITH_PAREN.test(trimmed) &&
+    (trimmed[0] === '{' || trimmed.indexOf(':') > -1 || trimmed.indexOf(',') > -1)
+}
+
 function removeSurroundingBrackets(val) {
   // console.log('val', val)
   return val.replace(/^{/, '').replace(/}$/, '')
@@ -776,11 +859,26 @@ function areAllBracketsBalanced(str) {
   return count === 0
 }
 
-function isBalanced(str, open = '{') {
+function isBalanced(str, open = '{', ignoreQuotedBrackets = false) {
   const close = BRACKET_TYPES[open]
   let count = 0
+  let quote = ''
   for (let i = 0; i < str.length; i++) {
     const c = str[i]
+    if (ignoreQuotedBrackets) {
+      if (quote) {
+        if (c === quote && str[i - 1] !== '\\') {
+          quote = ''
+        }
+        continue
+      }
+
+      if (QUOTE_CHARS[c]) {
+        quote = c
+        continue
+      }
+    }
+
     if (c === open) count++
     else if (c === close) count--
   }

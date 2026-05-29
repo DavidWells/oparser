@@ -644,7 +644,7 @@ test('Handles inner curly brackets {}', () => {
   assert.equal(one, answer)
 })
 
-test.skip('Handles inner curly brackets {}', () => {
+test('Handles inner curly brackets {} extended', () => {
   const answer = { 
     funny: '${funky}',
     one: "weirdval}}}",
@@ -665,7 +665,6 @@ test.skip('Handles inner curly brackets {}', () => {
   six="{{weirdval}}"
   seven='{{weirdval}}'
   `)
-  console.log('one weird brackets', one)
   assert.equal(one, answer)
 })
 
@@ -947,6 +946,28 @@ test('Simple array', () => {
 
   const one = parse(`great={["scoot", "sco ot", 'scooo ttt', one, two, 3, 4, true]} `)
   assert.equal(one, { great: [ 'scoot', 'sco ot', 'scooo ttt', 'one', 'two', 3, 4, true ] })
+})
+
+test('Array strings preserve quoted commas', () => {
+  assert.equal(parse(`key=["one,two", three]`), {
+    key: ['one,two', 'three']
+  })
+
+  assert.equal(parse(`key=['one,two', three]`), {
+    key: ['one,two', 'three']
+  })
+})
+
+test('Array strings preserve quoted brackets', () => {
+  assert.equal(parse(`key=["a]b", two] next=1`), {
+    key: ['a]b', 'two'],
+    next: 1
+  })
+
+  assert.equal(parse(`key=["a[b", two] next=1`), {
+    key: ['a[b', 'two'],
+    next: 1
+  })
 })
 
 test('Mixed array syntax', () => {
@@ -1297,6 +1318,18 @@ test('Simple object', () => {
     awesome: false
   }}`)
   assert.equal(b, answerTwo)
+})
+
+test('Object strings preserve quoted curlies', () => {
+  assert.equal(parse(`key={{ a: "b{c}", d: 1 }} next=2`), {
+    key: { a: 'b{c}', d: 1 },
+    next: 2
+  })
+
+  assert.equal(parse(`key={{ a: "b}c", d: 1 }} next=2`), {
+    key: { a: 'b}c', d: 1 },
+    next: 2
+  })
 })
 
 
@@ -3085,12 +3118,14 @@ USERNAME=therealnerdybeast@example.tld
 
 test('Giant ini', () => {
   const val = parse(GIANT_INI)
-  console.log('val', val)
+  assert.equal(val.BASIC, 'basic')
+  assert.equal(val.AFTER_LINE, 'after_line')
+  assert.equal(val.SINGLE_QUOTES, 'single_quotes')
+  assert.equal(val.DOUBLE_QUOTES_INSIDE_SINGLE, 'double "quotes" work inside single quotes')
 })
 
 test('Json numbers', () => {
   const val = parseValue('{ "foo": 1.222, "bar": 1 }')
-  console.log('val', val)
   assert.equal(val.foo, 1.222)
   assert.equal(val.bar, 1)
 })
@@ -3281,7 +3316,6 @@ test('numeric string keys', () => {
 
 test('URL with ampersand unquoted', () => {
   const one = parse(`url=https://example.com?foo=bar&baz=qux`)
-  console.log('URL with ampersand:', one)
   assert.equal(one, { url: 'https://example.com?foo=bar&baz=qux' })
 })
 
@@ -3375,15 +3409,13 @@ test('tab characters in values', () => {
  ***********************************************************************************************************/
 
 test('sparse arrays', () => {
-  // Sparse array syntax - may not be supported
   const one = parse(`key=[1,,3]`)
-  console.log('sparse array:', one)
+  assert.equal(one, { key: [1, '', 3] })
 })
 
 test('consecutive equals', () => {
   const one = parse(`key==value`)
-  console.log('consecutive equals:', one)
-  // Could be key="" with value as next token, or key="=value"
+  assert.equal(one, { key: '=value' })
 })
 
 test('object with numeric keys', () => {
@@ -3427,19 +3459,21 @@ test('empty and null input', () => {
  ***********************************************************************************************************/
 
 test('boolean case sensitivity', () => {
-  // Uppercase
   const one = parse(`key=TRUE`)
-  console.log('TRUE:', one)
-
   const two = parse(`key=FALSE`)
-  console.log('FALSE:', two)
-
-  // Mixed case
   const three = parse(`key=True`)
-  console.log('True:', three)
-
   const four = parse(`key=False`)
-  console.log('False:', four)
+  const five = parse(`key=true`)
+  const six = parse(`key=false`)
+
+  assert.equal(one, { key: true })
+  assert.equal(two, { key: false })
+  assert.equal(three, { key: true })
+  assert.equal(four, { key: false })
+  assert.equal(five, { key: true })
+  assert.equal(six, { key: false })
+  assert.equal(parse(`key="TRUE"`), { key: 'TRUE' })
+  assert.equal(parse(`key='False'`), { key: 'False' })
 })
 
 /************************************************************************************************************

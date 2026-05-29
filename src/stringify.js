@@ -104,7 +104,7 @@ function jsonToJsObjectTwo(jsonStr = '') {
 
 function jsonToJsObject(str){
   // console.log('str', str)
-  arr = str.match(/"[^"\n]*?":/g)
+  const arr = str.match(/"[^"\n]*?":/g)
   if (!arr) {
     return ''
   }

@@ -66,6 +66,167 @@ const CONFLICTING_INNER_JSON_CLOSE_IN_SINGLE = replaceInnerCharPattern("}\\]}", 
 // const CONFLICTING_INNER_COLONS_SINGLE = replaceInnerCharPattern(":", `'`, `'`, 2)
 // const CONFLICTING_INNER_COLONS_DOUBLE = replaceInnerCharPattern(":", `"`, `"`, 2)
 
+function splitTopLevel(input, delimiter = ',') {
+  const values = []
+  let quote = ''
+  let escape = false
+  let curlyDepth = 0
+  let arrayDepth = 0
+  let parenDepth = 0
+  let start = 0
+
+  for (let i = 0; i < input.length; i++) {
+    const char = input[i]
+
+    if (quote) {
+      if (escape) {
+        escape = false
+      } else if (char === '\\') {
+        escape = true
+      } else if (char === quote) {
+        quote = ''
+      }
+      continue
+    }
+
+    if (char === '"' || char === "'" || char === '`') {
+      quote = char
+      continue
+    }
+
+    if (char === '{') curlyDepth++
+    else if (char === '}' && curlyDepth) curlyDepth--
+    else if (char === '[') arrayDepth++
+    else if (char === ']' && arrayDepth) arrayDepth--
+    else if (char === '(') parenDepth++
+    else if (char === ')' && parenDepth) parenDepth--
+
+    if (
+      char === delimiter &&
+      curlyDepth === 0 &&
+      arrayDepth === 0 &&
+      parenDepth === 0
+    ) {
+      values.push(input.slice(start, i))
+      start = i + 1
+    }
+  }
+
+  values.push(input.slice(start))
+  return values
+}
+
+function parseArrayString(value) {
+  const inner = value.match(ARRAY_REGEX)
+  if (!inner || typeof inner[1] === 'undefined') {
+    return value
+  }
+
+  return splitTopLevel(inner[1].replace(TRAILING_COMMAS, '')).map((x) => {
+    return convert(x.trim())
+  })
+}
+
+function parseArrayStringByBalance(value) {
+  const inner = value.match(ARRAY_REGEX)
+  if (!inner || !inner[1]) {
+    return value
+  }
+
+  const composeValue = inner[1]
+    .replace(TRAILING_COMMAS, '')
+    .split(',')
+    .reduce((acc, curr) => {
+      const open = (curr.match(/{/g) || []).length
+      const close = (curr.match(/}/g) || []).length
+      const arrayOpen = (curr.match(/\[/g) || []).length
+      const arrayClose = (curr.match(/\]/g) || []).length
+      acc.objectOpenCount += open
+      acc.objectCloseCount += close
+      acc.arrayOpenCount += arrayOpen
+      acc.arrayCloseCount += arrayClose
+      const sealObject = acc.objectOpenCount > 0 && acc.objectOpenCount === acc.objectCloseCount
+      const sealArray = acc.arrayOpenCount > 0 && acc.arrayOpenCount === acc.arrayCloseCount
+
+      if (acc.objectOpenCount > 0 && !sealObject || acc.arrayOpenCount > 0 && !sealArray) {
+        acc.next += curr + ','
+        return acc
+      }
+
+      if (sealObject || sealArray) {
+        if (sealObject) {
+          acc.objectOpenCount = 0
+          acc.objectCloseCount = 0
+        }
+        if (sealArray) {
+          acc.arrayOpenCount = 0
+          acc.arrayCloseCount = 0
+        }
+        acc.values.push(acc.next + curr)
+        acc.next = ''
+        return acc
+      }
+
+      acc.values.push(curr)
+      return acc
+    }, {
+      next: '',
+      values: [],
+      arrayOpenCount: 0,
+      arrayCloseCount: 0,
+      objectOpenCount: 0,
+      objectCloseCount: 0,
+    })
+
+  return composeValue.values.map((x) => {
+    return convert(x.trim())
+  })
+}
+
+function hasQuotedArrayDelimiter(value) {
+  let quote = ''
+  let escape = false
+
+  for (let i = 0; i < value.length; i++) {
+    const char = value[i]
+    if (quote) {
+      if (escape) {
+        escape = false
+      } else if (char === '\\') {
+        escape = true
+      } else if (char === quote) {
+        quote = ''
+      } else if (char === ',' || char === '[' || char === ']') {
+        return true
+      }
+      continue
+    }
+
+    if (char === '"' || char === "'" || char === '`') {
+      quote = char
+    }
+  }
+
+  return false
+}
+
+function shouldUseArrayFallback(value, parsed) {
+  if (!Array.isArray(parsed) || !hasQuotedArrayDelimiter(value)) {
+    return false
+  }
+
+  const inner = value.match(ARRAY_REGEX)
+  if (!inner || typeof inner[1] === 'undefined') {
+    return false
+  }
+
+  const topLevelValues = splitTopLevel(inner[1].replace(TRAILING_COMMAS, ''))
+  return topLevelValues.every((x) => {
+    const item = x.trim()
+    return !isArrayLike(item) && !isObjectLike(item) && item.indexOf('\n') === -1
+  })
+}
+
 function cleanObjectString(value) {
   return value
       .replace(/\n/g, '\\n')
@@ -184,10 +345,10 @@ function convert(value) {
   console.log('convert value', value)
   console.log('convert type', typeof value)
   /** */
-  if (value === 'false') {
+  if (/^false$/i.test(value)) {
     return false
   }
-  if (value === 'true') {
+  if (/^true$/i.test(value)) {
     return true
   }
 
@@ -239,7 +400,10 @@ function convert(value) {
         // console.log('cleaner', value)
       }
       // console.log('value', value)
-      const val = parseJSON(value) // last attempt to format an array like [ one, two ]
+      const val = parseJSON(value) // last attempt to format an object like { one: two }
+      if (isArrayLike(value) && shouldUseArrayFallback(value, val)) {
+        return parseArrayString(value)
+      }
       // console.log('Do it', val)
       return val
     } catch (err) {
@@ -262,66 +426,7 @@ function convert(value) {
       }
       /* Convert array looking string into values */
       if (typeof value === 'string' && ARRAY_REGEX.test(value)) {
-        const inner = value.match(ARRAY_REGEX)
-        // console.log('try array', inner)
-
-        if (inner && inner[1]) {
-          let innerValue = inner[1]
-
-          const composeValue = innerValue
-            .replace(TRAILING_COMMAS, '') // remove dangling commas JSON alt MATCH_DANGLING_COMMAS /}(,[^}]*?)]}?$/
-            .split(',')
-            .reduce((acc, curr) => {
-            const open = (curr.match(/{/g) || []).length
-            const close = (curr.match(/}/g) || []).length
-            const arrayOpen = (curr.match(/\[/g) || []).length
-            const arrayClose = (curr.match(/\]/g) || []).length
-            acc.objectOpenCount += open
-            acc.objectCloseCount += close
-            acc.arrayOpenCount += arrayOpen
-            acc.arrayCloseCount += arrayClose
-            const sealObject = acc.objectOpenCount > 0 && acc.objectOpenCount === acc.objectCloseCount
-            const sealArray = acc.arrayOpenCount > 0 && acc.arrayOpenCount === acc.arrayCloseCount
-
-            if (acc.objectOpenCount > 0 && !sealObject || acc.arrayOpenCount > 0 && !sealArray) {
-              acc.next += curr + ','
-              return acc
-            }
-
-            if (sealObject || sealArray) {
-              if (sealObject) {
-                acc.objectOpenCount = 0
-                acc.objectCloseCount = 0
-              }
-              if (sealArray) {
-                acc.arrayOpenCount = 0
-                acc.arrayCloseCount = 0
-              }
-              acc.values.push(acc.next + curr)
-              acc.next = ''
-              return acc
-            }
-
-            // default
-            acc.values.push(curr)
-            return acc
-          }, {
-            next: '',
-            values: [],
-            arrayOpenCount: 0,
-            arrayCloseCount: 0,
-            objectOpenCount: 0,
-            objectCloseCount: 0,
-          })
-          // console.log('composeValue', composeValue)
-          if (composeValue.values.length) {
-            const newVal = composeValue.values.map((x) => {
-              // console.log('x', x)
-              return convert(x.trim())
-            })
-            return newVal
-          }
-        }
+        return parseArrayStringByBalance(value)
       }
     }
     /* Fix fallthrough strings remove surrounding strings
