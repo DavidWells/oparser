@@ -350,4 +350,30 @@ test('stringify empty object', () => {
   assert.is(stringValueTwo, 'hello="world"')
 })
 
+test('stringify option formats', () => {
+  const joinerValue = stringify({ a: 1, b: 'two' }, { joiner: ':', separator: ' ' })
+  assert.is(joinerValue, 'a:1 b:"two"')
+
+  const compressedValue = stringify({ a: { b: 1 }, c: [1, 2] }, {
+    compressed: true,
+    separator: ' '
+  })
+  assert.is(compressedValue, 'a={{b:1}} c={[1, 2]}')
+  assert.equal(parse(compressedValue), { a: { b: 1 }, c: [1, 2] })
+
+  const expandedValue = stringify({ a: { b: 1 } }, { expanded: true })
+  assert.is(expandedValue, `a={{
+  b: 1
+}}`)
+  assert.equal(parse(expandedValue), { a: { b: 1 } })
+
+  const singleLineValue = stringify({ a: { b: 1, c: [2, 3] } }, { singleLineValues: true })
+  assert.is(singleLineValue, 'a={{b: 1, c: [2, 3]}}')
+  assert.equal(parse(singleLineValue), { a: { b: 1, c: [2, 3] } })
+
+  const jsonValue = stringify({ a: { b: 1 } }, { asJs: false })
+  assert.is(jsonValue, 'a={{ "b": 1 }}')
+  assert.equal(parse(jsonValue), { a: { b: 1 } })
+})
+
 test.run()

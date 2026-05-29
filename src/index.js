@@ -36,6 +36,193 @@ const QUOTE_CHARS = {
   '`': true,
 }
 
+function readQuotedToken(str, start) {
+  const quote = str[start]
+  let value = ''
+  let escape = false
+
+  for (let i = start + 1; i < str.length; i++) {
+    const char = str[i]
+    if (escape) {
+      value += (char === quote || char === '\\') ? char : `\\${char}`
+      escape = false
+      continue
+    }
+    if (char === '\\') {
+      escape = true
+      continue
+    }
+    if (char === quote) {
+      return { value, end: i }
+    }
+    value += char
+  }
+
+  return null
+}
+
+function startsKeyAssignmentAt(str, start) {
+  let i = start
+  while (i < str.length && WHITE_SPACE.test(str[i])) {
+    i++
+  }
+
+  if (i >= str.length) {
+    return false
+  }
+
+  if (QUOTE_CHARS[str[i]]) {
+    const quoted = readQuotedToken(str, i)
+    if (!quoted) {
+      return false
+    }
+    i = quoted.end + 1
+  } else {
+    let hasKeyChar = false
+    while (i < str.length && !WHITE_SPACE.test(str[i]) && str[i] !== '=') {
+      hasKeyChar = true
+      i++
+    }
+    if (!hasKeyChar) {
+      return false
+    }
+  }
+
+  while (i < str.length && WHITE_SPACE.test(str[i])) {
+    i++
+  }
+
+  return str[i] === '='
+}
+
+function findClosingQuote(value, quote, start = 1) {
+  let escape = false
+  for (let i = start; i < value.length; i++) {
+    const char = value[i]
+    if (escape) {
+      escape = false
+      continue
+    }
+    if (char === '\\') {
+      escape = true
+      continue
+    }
+    if (char === quote) {
+      return i
+    }
+  }
+  return -1
+}
+
+function stripTrailingComment(value) {
+  return value.replace(/\s+(?:#|\/\/|\/\*)[\s\S]*$/, '').trimEnd()
+}
+
+function parseIniDocument(str) {
+  if (typeof str !== 'string' || str.indexOf('\n') === -1) {
+    return null
+  }
+
+  const result = {}
+  const lines = str.replace(/\r\n/g, '\n').split('\n')
+  let pending = null
+
+  function saveIniValue(key, rawValue, quote) {
+    let value = rawValue
+    if (!quote) {
+      value = stripTrailingComment(value.trim())
+      result[key] = convert(value)
+      return
+    }
+    result[key] = removeTempCharacters(value)
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    const trimmed = line.trim()
+
+    if (pending) {
+      const closing = findClosingQuote(line, pending.quote, 0)
+      if (closing !== -1) {
+        pending.value += '\n' + line.slice(0, closing)
+        saveIniValue(pending.key, pending.value, pending.quote)
+        pending = null
+        continue
+      }
+
+      if (startsKeyAssignmentAt(line, 0)) {
+        saveIniValue(pending.key, pending.value, pending.quote)
+        pending = null
+        i--
+        continue
+      }
+
+      pending.value += '\n' + line
+      continue
+    }
+
+    if (!trimmed || /^(#|\/\/|\/\*)/.test(trimmed)) {
+      continue
+    }
+
+    const eq = line.indexOf('=')
+    if (eq === -1) {
+      result[trimmed] = true
+      continue
+    }
+
+    const key = line.slice(0, eq).trim()
+    let value = line.slice(eq + 1).trimStart()
+    if (!key) {
+      return null
+    }
+
+    const quote = QUOTE_CHARS[value[0]] ? value[0] : ''
+    if (!quote) {
+      saveIniValue(key, value, '')
+      continue
+    }
+
+    const closing = findClosingQuote(value, quote)
+    if (closing !== -1) {
+      saveIniValue(key, value.slice(1, closing), quote)
+      continue
+    }
+
+    pending = {
+      key,
+      quote,
+      value: value.slice(1)
+    }
+  }
+
+  if (pending) {
+    saveIniValue(pending.key, pending.value, pending.quote)
+  }
+
+  return Object.keys(result).length ? result : null
+}
+
+function hasInternalParseArtifacts(value) {
+  return Object.keys(value).some((key) => {
+    if (
+      key.indexOf(SINGLE_QUOTE) > -1 ||
+      key.indexOf(DOUBLE_QUOTE) > -1 ||
+      key.indexOf(OUTER_SINGLE_QUOTE) > -1 ||
+      key.indexOf(OUTER_DOUBLE_QUOTE) > -1
+    ) {
+      return true
+    }
+    const val = value[key]
+    return typeof val === 'string' && (
+      val.indexOf(SINGLE_QUOTE) > -1 ||
+      val.indexOf(DOUBLE_QUOTE) > -1 ||
+      val.indexOf(OUTER_SINGLE_QUOTE) > -1 ||
+      val.indexOf(OUTER_DOUBLE_QUOTE) > -1
+    )
+  })
+}
+
 function removeTempCharacters(val, rep) {
   if (typeof val === 'string') {
     return val
@@ -110,7 +297,7 @@ const DEBUG = false
 /**
  * Parse config string into key-value object
  * @template {Record<string, any>} [T=Record<string, any>]
- * @param {string} s - Config string to parse
+ * @param {string|null|undefined} s - Config string to parse
  * @returns {T}
  */
 function parse(s) {
@@ -120,13 +307,15 @@ function parse(s) {
 
   /* Trim string and remove comment blocks */
   let str = s.trim()
+  const originalInput = str
 
   /* If surrounded by double quotes, remove them */
-  if (str[0] === '"' && str[str.length - 1] === '"') {
+  const wrappedString = QUOTE_CHARS[str[0]] ? readQuotedToken(str, 0) : null
+  if (str[0] === '"' && str[str.length - 1] === '"' && wrappedString && wrappedString.end === str.length - 1) {
     str = str.replace(/^"|"$/g, '')
-  } else if (str[0] === "'" && str[str.length - 1] === "'") {
+  } else if (str[0] === "'" && str[str.length - 1] === "'" && wrappedString && wrappedString.end === str.length - 1) {
     str = str.replace(/^'|'$/g, '')
-  } else if (str[0] === "`" && str[str.length - 1] === "`") {
+  } else if (str[0] === "`" && str[str.length - 1] === "`" && wrappedString && wrappedString.end === str.length - 1) {
     str = str.replace(/^`|`$/g, '')
   }
   
@@ -437,6 +626,16 @@ function parse(s) {
       continue;
     }
 
+    if (!bufferKey && !valueIsOpen && QUOTE_CHARS[char]) {
+      const quotedKey = readQuotedToken(str, i)
+      if (quotedKey) {
+        bufferKey = quotedKey.value
+        keyIsOpen = true
+        i = quotedKey.end
+        continue
+      }
+    }
+
     /* If last char and not white space, add to key */
     if (keyIsOpen && !nextChar && VALID_KEY_CHAR.test(char)) {
       bufferKey+= char
@@ -445,7 +644,7 @@ function parse(s) {
     }
 
     /* If has key and is break, set bool */
-    if (keyIsOpen && bufferKey && (WHITE_SPACE.test(char) || !nextChar)) {
+    if (keyIsOpen && bufferKey && char !== '=' && (WHITE_SPACE.test(char) || !nextChar)) {
       if (!nextChar) {
         // Last char add it
         bufferKey+= char
@@ -465,19 +664,15 @@ function parse(s) {
       continue;
     }
 
+    if (valueIsOpen && !openQuote && !bufferValue && WHITE_SPACE.test(char) && startsKeyAssignmentAt(str, i + 1)) {
+      save(bufferKey, '', 'empty value before key')
+      continue
+    }
+
     /* trim trailing spaces from after separator: "bob =( trimmed spaces )cool" */
     if (!openQuote && !bufferValue && char === ' ') {
       // console.log('EXIT ON', bufferValue)
       continue;
-    }
-
-    /* If key + value and not inside known quotes */
-    if (
-      valueIsOpen && 
-      (openQuote === INFERRED_QUOTE) && 
-      ((char === ',' && WHITE_SPACE.test(nextChar)) || WHITE_SPACE.test(char))) {
-      save(bufferKey, convert(bufferValue), 'inferred')
-      continue
     }
 
     /* If collecting key pieces and is valid character add to key */
@@ -517,6 +712,14 @@ function parse(s) {
           bufferValue+= char
           continue
         }
+      }
+
+      /* If key + value and not inside known quotes */
+      if (
+        (openQuote === INFERRED_QUOTE) &&
+        ((char === ',' && WHITE_SPACE.test(nextChar)) || WHITE_SPACE.test(char))) {
+        save(bufferKey, convert(bufferValue), 'inferred')
+        continue
       }
 
       /* If opening bracket is brackets {}. Ensure balance */
@@ -661,12 +864,23 @@ function parse(s) {
     }
   }
 
+  if (valueIsOpen && bufferKey && !bufferValue) {
+    save(bufferKey, '', 'empty value at end')
+  }
+
+  if (hasInternalParseArtifacts(vals)) {
+    const iniParsed = parseIniDocument(originalInput)
+    if (iniParsed) {
+      return iniParsed
+    }
+  }
+
   return vals
 }
 
 /**
 * Parse freeform value into object
-* @param {string} value - freeform string value to parse into object, array or value.
+* @param {string|null|undefined} value - freeform string value to parse into object, array or value.
 * @returns {any}
 */
 function parseValue(value) {
@@ -893,7 +1107,19 @@ function isBalanced(str, open = '{', ignoreQuotedBrackets = false) {
  * @returns {T}
  */
 function options(input = '', ...substitutions) {
-  let str = String.raw(input, ...substitutions)
+  const rendered = substitutions.map((value) => {
+    if (typeof value === 'string') {
+      return /\s/.test(value) ? JSON.stringify(value) : value
+    }
+    if (typeof value === 'undefined') {
+      return ''
+    }
+    if (value === null || typeof value === 'object') {
+      return JSON.stringify(value)
+    }
+    return String(value)
+  })
+  let str = String.raw(input, ...rendered)
   return parse(str)
 }
 

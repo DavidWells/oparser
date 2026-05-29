@@ -3139,7 +3139,7 @@ service.build.pull_request_url=https://github.com/your-company/api-service/pull/
 service.build.git_hash=05e5736 service.build.deployment.user=keanu.reeves@your-company.com
 service.build.deployment.trigger=manual container.id=1234567890 container.name=api-service-1234567890 cloud.availability_zone=us-east-1
 cloud.region=us-east-1 k8s.pod.name=api-service-1234567890 k8s.cluster.name=api-service-cluster feature_flag.auth_v2=true
-http.response.status_code=401 user.id=Samanta27@gmail.com user.type=vip user.auth_method=sso-google user.team_id=team-1
+http.response.status_code=401 user.id=bob@gmail.com user.type=vip user.auth_method=sso-google user.team_id=team-1
 `
 
   const val = parse(logTest)
@@ -3176,7 +3176,7 @@ http.response.status_code=401 user.id=Samanta27@gmail.com user.type=vip user.aut
     'service.build.deployment.at': '2024-10-14T19:47:38Z',
     'service.build.diff_url': 'https://github.com/your-company/api-service/compare/c9d9380..05e5736',
     'service.build.pull_request_url': 'https://github.com/your-company/api-service/pull/123',
-    'service.build.git_hash': Infinity,
+    'service.build.git_hash': '05e5736',
     'service.build.deployment.user': 'keanu.reeves@your-company.com',
     'service.build.deployment.trigger': 'manual',
     'container.id': 1234567890,
@@ -3187,7 +3187,7 @@ http.response.status_code=401 user.id=Samanta27@gmail.com user.type=vip user.aut
     'k8s.cluster.name': 'api-service-cluster',
     'feature_flag.auth_v2': true,
     'http.response.status_code': 401,
-    'user.id': 'Samanta27@gmail.com',
+    'user.id': 'bob@gmail.com',
     'user.type': 'vip',
     'user.auth_method': 'sso-google',
     'user.team_id': 'team-1'
@@ -3232,10 +3232,40 @@ USERNAME=therealnerdybeast@example.tld
 
 test('Giant ini', () => {
   const val = parse(GIANT_INI)
-  assert.equal(val.BASIC, 'basic')
-  assert.equal(val.AFTER_LINE, 'after_line')
-  assert.equal(val.SINGLE_QUOTES, 'single_quotes')
-  assert.equal(val.DOUBLE_QUOTES_INSIDE_SINGLE, 'double "quotes" work inside single quotes')
+  assert.equal(val, {
+    BASIC: 'basic',
+    AFTER_LINE: 'after_line',
+    SINGLE_QUOTES: 'single_quotes',
+    SINGLE_QUOTES_SPACED: '    single quotes    ',
+    DOUBLE_QUOTES: 'double_quotes',
+    DOUBLE_QUOTES_SPACED: '    double quotes    ',
+    DOUBLE_QUOTES_INSIDE_SINGLE: 'double "quotes" work inside single quotes',
+    DOUBLE_QUOTES_WITH_NO_SPACE_BRACKET: '{ port: $MONGOLAB_PORT}',
+    SINGLE_QUOTES_INSIDE_DOUBLE: "single 'quotes' work inside double quotes",
+    BACKTICKS_INSIDE_SINGLE: '`backticks` work inside single quotes',
+    BACKTICKS_INSIDE_DOUBLE: '`backticks` work inside double quotes',
+    BACKTICKS: 'backticks',
+    BACKTICKS_SPACED: '    backticks    ',
+    DOUBLE_QUOTES_INSIDE_BACKTICKS: 'double "quotes" work inside backticks',
+    SINGLE_QUOTES_INSIDE_BACKTICKS: "single 'quotes' work inside backticks",
+    DOUBLE_AND_SINGLE_QUOTES_INSIDE_BACKTICKS: `double "quotes" and single 'quotes' work inside backticks`,
+    EXPAND_NEWLINES: 'expand\nnew\nlines',
+    DONT_EXPAND_UNQUOTED: 'dontexpand',
+    newlines: true,
+    DONT_EXPAND_SQUOTED: 'dontexpand\nnewlines',
+    INLINE_COMMENTS: 'inline comments',
+    INLINE_COMMENTS_SINGLE_QUOTES: 'inline comments outside of #singlequotes',
+    INLINE_COMMENTS_DOUBLE_QUOTES: 'inline comments outside of #doublequotes',
+    INLINE_COMMENTS_BACKTICKS: 'inline comments outside of #backticks',
+    INLINE_COMMENTS_SPACE: 'inline comments start with a#number sign. no space required.',
+    EQUAL_SIGNS: 'equals==',
+    RETAIN_INNER_QUOTES: { foo: 'bar' },
+    RETAIN_INNER_QUOTES_AS_STRING: '{"foo": "bar"}',
+    RETAIN_INNER_QUOTES_AS_BACKTICKS: `{"foo": "bar's"}`,
+    TRIM_SPACE_FROM_UNQUOTED: 'some spaced out string',
+    USERNAME: 'therealnerdybeast@example.tld',
+    SPACED_KEY: 'parsed'
+  })
 })
 
 test('Json numbers', () => {
@@ -3287,6 +3317,21 @@ test('empty string values', () => {
 
   const three = parse("key=``")
   assert.equal(three, { key: '' }, 'key=``')
+})
+
+test('empty unquoted values', () => {
+  const one = parse(`key=`)
+  assert.equal(one, { key: '' }, 'single trailing empty value')
+
+  const two = parse(`a= b=2 c=`)
+  assert.equal(two, { a: '', b: 2, c: '' }, 'same-line empty values')
+
+  const three = parse(`
+  a=
+  b=2
+  c=
+  `)
+  assert.equal(three, { a: '', b: 2, c: '' }, 'multiline empty values')
 })
 
 test('whitespace-only string values', () => {
@@ -3358,13 +3403,23 @@ test('Infinity and NaN', () => {
 })
 
 test('leading zeros', () => {
-  // Leading zeros - behavior may vary
   const one = parse(`key=007`)
-  // Could be number 7 or string "007" depending on implementation
-  assert.ok(one.key === 7 || one.key === '007', 'key=007')
+  assert.equal(one, { key: '007' }, 'key=007')
 
   const two = parse(`key="007"`)
   assert.equal(two, { key: '007' }, 'key="007" as string')
+
+  const three = parse(`key=000`)
+  assert.equal(three, { key: '000' }, 'key=000')
+
+  const four = parse(`key=-007`)
+  assert.equal(four, { key: '-007' }, 'key=-007')
+
+  const five = parse(`key=0`)
+  assert.equal(five, { key: 0 }, 'key=0')
+
+  const six = parse(`key=0.7`)
+  assert.equal(six, { key: 0.7 }, 'key=0.7')
 })
 
 /************************************************************************************************************
@@ -3422,6 +3477,16 @@ test('numeric string keys', () => {
 
   const two = parse(`0=zero`)
   assert.equal(two, { 0: 'zero' }, '0=zero')
+})
+
+test('quoted keys', () => {
+  assert.equal(parse(`"display name"="David Wells"`), { 'display name': 'David Wells' })
+  assert.equal(parse(`'data-value'=foo`), { 'data-value': 'foo' })
+  assert.equal(parse('`tick key`=value'), { 'tick key': 'value' })
+  assert.equal(parse(`"spaced key"=1 normal=2`), { 'spaced key': 1, normal: 2 })
+  assert.equal(parse(`"a\\"b"=1`), { 'a"b': 1 }, 'escaped quote in quoted key')
+  assert.equal(parse(`"a=b"=1`), { 'a=b': 1 }, 'equals sign in quoted key')
+  assert.equal(parse(`a= "display name"=two`), { a: '', 'display name': 'two' }, 'empty value before quoted key')
 })
 
 /************************************************************************************************************
@@ -3518,6 +3583,17 @@ test('tab characters in values', () => {
   assert.equal(two, { key: 'with\ttab' }, 'tab in single quotes')
 })
 
+test('CRLF line endings', () => {
+  const one = parse('a=1\r\nb=2\r\n')
+  assert.equal(one, { a: 1, b: 2 }, 'simple CRLF lines')
+
+  const two = parse('text={`one\r\ntwo`}\r\nother=value')
+  assert.equal(two, { text: 'one\r\ntwo', other: 'value' }, 'quoted multiline CRLF')
+
+  const three = parse('a=1 // comment\r\nb=2 # comment\r\n')
+  assert.equal(three, { a: 1, b: 2 }, 'CRLF comments')
+})
+
 /************************************************************************************************************
  * Edge Cases - Structural
  ***********************************************************************************************************/
@@ -3530,6 +3606,16 @@ test('sparse arrays', () => {
 test('consecutive equals', () => {
   const one = parse(`key==value`)
   assert.equal(one, { key: '=value' })
+})
+
+test('repeated keys use last value', () => {
+  const one = parse(`key=one key=two`)
+  assert.equal(one, { key: 'two' })
+})
+
+test('semicolon is value content, not a separator', () => {
+  const one = parse(`a=1; b=2`)
+  assert.equal(one, { a: '1;', b: 2 })
 })
 
 test('object with numeric keys', () => {
@@ -3566,6 +3652,10 @@ test('empty and null input', () => {
 
   const three = parse(undefined)
   assert.equal(three, {}, 'undefined input')
+
+  assert.equal(parseValue(null), null, 'parseValue null passthrough')
+  assert.equal(parseValue(undefined), undefined, 'parseValue undefined passthrough')
+  assert.equal(parseValue(''), '', 'parseValue empty string passthrough')
 })
 
 /************************************************************************************************************
@@ -3608,6 +3698,14 @@ test('parseValue composite booleans are case-insensitive when unquoted', () => {
       }
     }
   ])
+})
+
+test('parseValue primitive roots', () => {
+  assert.equal(parseValue('true'), true)
+  assert.equal(parseValue('false'), false)
+  assert.equal(parseValue('0'), 0)
+  assert.equal(parseValue('null'), null)
+  assert.equal(parseValue('""'), '')
 })
 
 /************************************************************************************************************
@@ -3668,17 +3766,47 @@ test('date strings', () => {
   assert.equal(two, { date: '2024-01-15T10:30:00Z' }, 'ISO date string')
 })
 
+test('comment adjacency variants', () => {
+  assert.equal(parse(`a=1 // comment`), { a: 1 }, 'slash comment at EOF')
+  assert.equal(parse(`a=1 # comment`), { a: 1 }, 'hash comment at EOF')
+  assert.equal(parse(`a=1 /* comment */ b=2`), { a: 1, b: 2 }, 'inline block comment between values')
+  assert.equal(parse(`url=https://example.com#section other=value`), {
+    url: 'https://example.com#section',
+    other: 'value'
+  }, 'url fragment is preserved before next key')
+})
+
 /************************************************************************************************************
  * Edge Cases - Large strings
  ***********************************************************************************************************/
 
 test('large JSON uses JSON.parse fallback', () => {
   const largeJson = fs.readFileSync(path.join(__dirname, 'fixtures/1-point-8-mb.json'), 'utf8')
+  const expected = JSON.parse(largeJson)
   assert.ok(largeJson.length > 20000, 'fixture is large enough')
 
   const result = parse(largeJson)
-  assert.ok(typeof result === 'object', 'parsed as object')
-  assert.ok(Object.keys(result).length > 0, 'has keys')
+  assert.equal(result, expected)
+})
+
+test('large key-value JSON uses JSON.parse fallback', () => {
+  const expected = { value: 'x'.repeat(21000), nested: [1, 2, 3] }
+  const largeJson = JSON.stringify(expected)
+  const input = `payload=${largeJson}`
+  assert.ok(input.length > 20000, 'fixture is large enough')
+
+  const result = parse(input)
+  assert.equal(result, { payload: expected })
+})
+
+test('large fixture key-value JSON uses JSON.parse fallback', () => {
+  const largeJson = fs.readFileSync(path.join(__dirname, 'fixtures/1-point-8-mb.json'), 'utf8')
+  const expected = JSON.parse(largeJson)
+  const input = `payload=${largeJson}`
+  assert.ok(input.length > 20000, 'fixture is large enough')
+
+  const result = parse(input)
+  assert.equal(result, { payload: expected })
 })
 
 test('large invalid string throws helpful error', () => {

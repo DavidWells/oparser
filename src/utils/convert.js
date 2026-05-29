@@ -306,6 +306,10 @@ function cleanObjectString(value) {
       .replace(/__CLOSE_JSON__OBJECT__/g, '}]}')
 }
 
+function hasLeadingZeroNumberShape(value) {
+  return /^[-+]?0\d/.test(value)
+}
+
 // const CONFLICTING_CURLIES_IN_SINGLE = replaceInnerCharPattern("}", `'`, `'`, 2)
 // const CONFLICTING_CURLIES_IN_DOUBLE = replaceInnerCharPattern("}", `\\[`, `\\]`, 1)
 
@@ -422,6 +426,10 @@ function convert(value) {
 
   // Empty or whitespace-only strings should stay as-is, not become 0
   if (value === '' || /^\s+$/.test(value)) {
+    return value
+  }
+
+  if (hasLeadingZeroNumberShape(value)) {
     return value
   }
 

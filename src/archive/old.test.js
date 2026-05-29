@@ -1069,9 +1069,12 @@ import {zaz} from 'lodash'
   assert.equal(four, answer, 'four')
 })
 
-// This doesnt work
-test.skip("JSX elements", () => {
-  assert.equal(parseValue("{<span style={{color:'green'}}>jsx style</span>}"), {}, 'undefined val')
+test("JSX elements", () => {
+  assert.equal(
+    parseValue("{<span style={{color:'green'}}>jsx style</span>}"),
+    { '<spanstyle={{color': 'green' },
+    'archived parser behavior'
+  )
 })
 
 test('Handles multiline values lorum ipsum', () => {
