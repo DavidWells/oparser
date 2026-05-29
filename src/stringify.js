@@ -96,12 +96,6 @@ function formatObject(obj, opts) {
   return opts.asJs ? jsonToJsObject(cleanObj) : cleanObj
 }
 
-function jsonToJsObjectTwo(jsonStr = '') {
-  return jsonStr
-    .replace(/^([\t ]*)("([^\\"]*|\\.)*")([\t ]*):([\t ]*)/gm, '$1$3: ')
-    .replace(/^([\t ]*){?[\t ]*("([^\\"]*|\\.)*")([\t ]*):([\t ]*)/gm, '$1{ $3: ')
-}
-
 function jsonToJsObject(str){
   // console.log('str', str)
   const arr = str.match(/"[^"\n]*?":/g)
