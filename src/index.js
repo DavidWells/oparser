@@ -225,6 +225,8 @@ function hasInternalParseArtifacts(value) {
 
 function removeTempCharacters(val, rep) {
   if (typeof val === 'string') {
+    /* Every sentinel contains '_'; no '_' means nothing to restore */
+    if (val.indexOf('_') === -1) return val
     return val
       .replace(/_S_Q_/g, `'`)
       .replace(/_D_Q_/g, `"`)
