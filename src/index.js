@@ -36,6 +36,10 @@ const QUOTE_CHARS = {
   '`': true,
 }
 
+function isWhitespaceChar(char) {
+  return char === ' ' || char === '\n' || char === '\r' || char === '\t' || char === '\u00a0'
+}
+
 function readQuotedToken(str, start) {
   const quote = str[start]
   let value = ''
@@ -63,7 +67,7 @@ function readQuotedToken(str, start) {
 
 function startsKeyAssignmentAt(str, start) {
   let i = start
-  while (i < str.length && WHITE_SPACE.test(str[i])) {
+  while (i < str.length && isWhitespaceChar(str[i])) {
     i++
   }
 
@@ -79,7 +83,7 @@ function startsKeyAssignmentAt(str, start) {
     i = quoted.end + 1
   } else {
     let hasKeyChar = false
-    while (i < str.length && !WHITE_SPACE.test(str[i]) && str[i] !== '=') {
+    while (i < str.length && !isWhitespaceChar(str[i]) && str[i] !== '=') {
       hasKeyChar = true
       i++
     }
@@ -88,7 +92,7 @@ function startsKeyAssignmentAt(str, start) {
     }
   }
 
-  while (i < str.length && WHITE_SPACE.test(str[i])) {
+  while (i < str.length && isWhitespaceChar(str[i])) {
     i++
   }
 
@@ -646,7 +650,7 @@ function parse(s) {
     }
 
     /* If has key and is break, set bool */
-    if (keyIsOpen && bufferKey && char !== '=' && (WHITE_SPACE.test(char) || !nextChar)) {
+    if (keyIsOpen && bufferKey && char !== '=' && (isWhitespaceChar(char) || !nextChar)) {
       if (!nextChar) {
         // Last char add it
         bufferKey+= char
@@ -666,7 +670,7 @@ function parse(s) {
       continue;
     }
 
-    if (valueIsOpen && !openQuote && !bufferValue && WHITE_SPACE.test(char) && startsKeyAssignmentAt(str, i + 1)) {
+    if (valueIsOpen && !openQuote && !bufferValue && isWhitespaceChar(char) && startsKeyAssignmentAt(str, i + 1)) {
       save(bufferKey, '', 'empty value before key')
       continue
     }
@@ -678,7 +682,7 @@ function parse(s) {
     }
 
     /* If collecting key pieces and is valid character add to key */
-    if (keyIsOpen && !WHITE_SPACE.test(char)) {
+    if (keyIsOpen && !isWhitespaceChar(char)) {
       bufferKey+= char
       continue;
     }
@@ -719,7 +723,7 @@ function parse(s) {
       /* If key + value and not inside known quotes */
       if (
         (openQuote === INFERRED_QUOTE) &&
-        ((char === ',' && WHITE_SPACE.test(nextChar)) || WHITE_SPACE.test(char))) {
+        ((char === ',' && isWhitespaceChar(nextChar)) || isWhitespaceChar(char))) {
         save(bufferKey, convert(bufferValue), 'inferred')
         continue
       }
@@ -809,7 +813,7 @@ function parse(s) {
 
       if (
         (openQuote && openQuote !== '{' && openQuote !== '[') // Isn't value in brackets
-        && (char === openQuote && (WHITE_SPACE.test(nextChar) || nextChar === ',')) // Matching closing close with trailing space
+        && (char === openQuote && (isWhitespaceChar(nextChar) || nextChar === ',')) // Matching closing close with trailing space
       ) {
         bufferValue+= char
         save(bufferKey, preFormat(bufferValue), 'quoteClose')
@@ -818,7 +822,7 @@ function parse(s) {
 
       // Is inferred quote value
       if (
-        openQuote === INFERRED_QUOTE && ((char === ',' && WHITE_SPACE.test(nextChar)))
+        openQuote === INFERRED_QUOTE && ((char === ',' && isWhitespaceChar(nextChar)))
       ) {
         // console.log('char', char)
         // console.log('nextChar', WHITE_SPACE.test(nextChar))
@@ -857,7 +861,7 @@ function parse(s) {
         continue;
       }
 
-      if (openQuote === INFERRED_QUOTE && (char === ',' && WHITE_SPACE.test(nextChar))) {
+      if (openQuote === INFERRED_QUOTE && (char === ',' && isWhitespaceChar(nextChar))) {
         continue;
       }
 
