@@ -85,4 +85,39 @@ for (const [name, make] of Object.entries(SCALING)) {
   }
 }
 
+/*
+ * Multiline attribute strings take a separate code path (the `isMultiline` branch), whose
+ * unbalanced-quote fixups pair an O(n) lookahead with `(\s*\n\s*)`. That whitespace group is
+ * ambiguous over a run like "\n \n \n ": any of the newlines can be the `\n`, and the whitespace
+ * on either side splits many ways — so every failed attempt re-pays for the lookahead. Cubic in
+ * practice: n=400 99ms, n=800 713ms, n=1600 5434ms (~7.5x per doubling).
+ *
+ * `([^\S\n]*\n\s*)` matches exactly the same language — whitespace containing at least one
+ * newline — but deterministically: the leading class cannot cross a newline, so the first `\n`
+ * is forced. Same n=1600: 62ms.
+ *
+ * These sizes are chosen to sit far below the old curve and far above the new one, so the test
+ * fails loudly if the ambiguity is reintroduced rather than merely getting slower.
+ */
+const MULTILINE_SIZES = [400, 1600]
+const MULTILINE_BUDGET_MS = 500
+
+const MULTILINE = {
+  'newline runs between quoted attrs': (n) => ` a="x"${'\n '.repeat(n)}b="y"`,
+  'newline runs, single quotes': (n) => ` a='x'${'\n '.repeat(n)}b='y'`,
+  'newline runs with tabs': (n) => ` a="x"${'\n\t'.repeat(n)}b="y"`,
+  'trailing newline run': (n) => ` a="x"${'\n '.repeat(n)}`,
+}
+
+for (const [name, make] of Object.entries(MULTILINE)) {
+  for (const size of MULTILINE_SIZES) {
+    test(`redos multiline: ${name} n=${size}`, () => {
+      const start = Date.now()
+      parse(make(size))
+      const elapsed = Date.now() - start
+      assert.ok(elapsed < MULTILINE_BUDGET_MS, `${name} n=${size} took ${elapsed}ms (budget ${MULTILINE_BUDGET_MS}ms)`)
+    })
+  }
+}
+
 test.run()
