@@ -51,4 +51,38 @@ for (const [name, input] of Object.entries(ATTACKS)) {
   })
 }
 
+/*
+ * A fixed-size budget catches exponential blowup but sails past polynomial blowup, so these assert
+ * SCALING: a quadratic regression fails here even though it terminates.
+ *
+ * HONEST LIMIT, worth knowing before trusting this section: these do NOT reproduce the O(n^2)
+ * whitespace-regex bug that motivated them. That one only surfaces through the way micro-mdx-parser
+ * feeds this parser (41s at n=800 through that path; ~1ms calling parse() directly with what looked
+ * like the same string). Direct parse() calls are fast on both the pre- and post-fix source, so
+ * these cases would not have caught it. The regression net that DOES catch it lives in the
+ * consuming repo, where micro-mdx is present. Keep these as general scaling guards; do not read a
+ * green run here as proof that the whitespace fixups are linear in production use.
+ */
+const SCALE_SIZES = [200, 800]
+const SCALE_BUDGET_MS = 400
+
+const SCALING = {
+  'space run in double quotes': (n) => `title="a${' '.repeat(n)}b"`,
+  'space run in single quotes': (n) => `title='a${' '.repeat(n)}b'`,
+  'unbalanced double + spaces': (n) => `title="a b" alt="unclosed${' '.repeat(n)}`,
+  'unbalanced single + spaces': (n) => `title='a b' alt='unclosed${' '.repeat(n)}`,
+  'sentinel-adjacent run': (n) => `a="${'x '.repeat(n)}"`,
+}
+
+for (const [name, make] of Object.entries(SCALING)) {
+  for (const size of SCALE_SIZES) {
+    test(`redos scaling: ${name} n=${size}`, () => {
+      const start = Date.now()
+      parse(make(size))
+      const elapsed = Date.now() - start
+      assert.ok(elapsed < SCALE_BUDGET_MS, `${name} n=${size} took ${elapsed}ms (budget ${SCALE_BUDGET_MS}ms)`)
+    })
+  }
+}
+
 test.run()

@@ -416,7 +416,7 @@ function parse(s) {
       .replace(/'__SPACE__/g, `${SINGLE_QUOTE} `)
       /* Unbalanced single or double quotes break previous regex, so we need to fix */
       /* Fix trailing close quote - match __SPACE__ placeholders or real spaces that precede _S_Q_ */
-      .replace(/(\s*)((__SPACE__|\s)+)_S_Q_(\s*)$/g, `$1$2'$4`)
+      .replace(/((?:__SPACE__|\s)+)_S_Q_(\s*)$/g, `$1'$2`)
       .replace(/(\s*)((?:__SPACE__)+)(\s*)_S_Q_(\s*)/g, `$1$2$3'$4`)
       /* Fix unbalanced quote bracket replacement */
       .replace(/}__SPACE__([\S])/, '} $1')
@@ -459,7 +459,7 @@ function parse(s) {
       .replace(/"__SPACE__/g, `${DOUBLE_QUOTE} `)
       /* Unbalanced single or double quotes break previous regex, so we need to fix */
       /* Fix trailing close quote - match both __SPACE__ placeholders and real spaces */
-      .replace(/(\s*)((?:__SPACE__|\s)+)(\s*)_D_Q_(\s*)/g, `$1$2$3"$4`)
+      .replace(/((?:__SPACE__|\s)+)_D_Q_(\s*)/g, `$1"$2`)
        /* Fix  unbalanced quote bracket replacement */
       .replace(/}__SPACE__([\S])/, '} $1')
  
