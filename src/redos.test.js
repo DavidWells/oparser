@@ -24,6 +24,22 @@ const ATTACKS = {
   'deep nested arrays': 'a=' + '['.repeat(500) + '1' + ']'.repeat(499) + ' b=2',
   'deep nested objects unclosed': 'a={' + 'x:{'.repeat(500) + '1' + '}'.repeat(500) + ' bad',
   'quote-pairs invert storm': "a='" + "x\\'".repeat(500) + ' y',
+
+  /* Plain-space runs inside quoted values. The 2026-07-16 audit concluded "no vulnerabilities"
+     but every case above storms escapes, commas or braces — none used a run of ordinary spaces,
+     which is the one thing the whitespace-fixup regexes key on. They were written
+     `((__SPACE__|\s)+)+`: a nested quantifier over a run it can partition exponentially many
+     ways, so a failing match backtracked ~16x per 4 extra spaces. Measured before the fix:
+     28 spaces = 7.6s through the renderer, 32 spaces did not finish.
+     Reachable from ordinary markdown — `<div title="a    b">` — so this is a render-path DoS,
+     not just a parser curiosity. */
+  'space run inside double quotes': 'title="a' + ' '.repeat(N) + 'b"',
+  'space run inside single quotes': "title='a" + ' '.repeat(N) + "b'",
+  'space run + unbalanced double quote': 'title="a b" alt="unclosed' + ' '.repeat(N),
+  'space run + unbalanced single quote': "title='a b' alt='unclosed" + ' '.repeat(N),
+  'space run then trailing quote': 'title="a b' + ' '.repeat(N) + '"',
+  'alternating space and sentinel-ish text': 'title="' + 'a '.repeat(N) + '"',
+  'space run with no closing tag context': 'a="x' + ' '.repeat(N) + 'y" b="p' + ' '.repeat(N) + 'q"',
 }
 
 for (const [name, input] of Object.entries(ATTACKS)) {
