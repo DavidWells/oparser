@@ -1,6 +1,6 @@
 {
   "name": "oparser",
-  "version": "3.1.2",
+  "version": "3.1.3",
   "description": "A very forgiving key-value option parser",
   "main": "src/index.js",
   "types": "types/index.d.ts",
