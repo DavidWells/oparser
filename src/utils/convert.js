@@ -10,13 +10,15 @@ const ARRAY_REGEX = /^\s*\[([\s\S]*?)\]\s*$/
 const OBJECT_REGEX = /^\s*\{([\s\S]*?)\}\s*$/
 const TRAILING_COMMAS = /,+$/
 // https://regex101.com/r/99mkDt/1 old /(?:,*[^\S]*)+?]$/
-const TRAILING_ARRAY_COMMAS = /(?:,+[^\S]*)+?](,)*\s*/
+// A single `,` per repetition, not `,+`: `,+` inside the outer `+?` is the nested (a+)+
+// quantifier that backtracks exponentially on a comma run with no closing `]`.
+const TRAILING_ARRAY_COMMAS = /(?:,[^\S]*)+?](,)*\s*/
 // https://regex101.com/r/cy7mLe/4
 const TRAILING_OBJECT_COMMAS = /(?:,[^\S]*)+(})(,*)\s*$/
 
-const TRAILING_ARRAY_COMMAS_GLOBAL = /(?:,+[^\S]*)+?](,)*\s*/gm
+const TRAILING_ARRAY_COMMAS_GLOBAL = /(?:,[^\S]*)+?](,)*\s*/gm
 
-const TRIM_INNER_TRAILING_OBJECT_COMMA = /(,+[^\S]*)*?}\s*/m
+const TRIM_INNER_TRAILING_OBJECT_COMMA = /(,[^\S]*)*?}\s*/m
 const HAS_JSON_TOKEN = /[{}\[\]"':,]/
   // // Remove trailing object commas
   // value = value.replace(/(?:,*[^\S]*)*?}(,)*/gm, '}$1')

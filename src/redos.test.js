@@ -18,6 +18,18 @@ const ATTACKS = {
   'array trailing commas': 'arr=[1,2' + ', '.repeat(N) + '] next=1',
   'object comma storm': 'o={a:1' + ','.repeat(N) + '} b=2',
   'object trailing commas + ws': 'o={a:1' + ', '.repeat(N) + '}',
+
+  /* The storms above are all UNCLOSED, so they fail isArrayLike/isObjectLike and never reach the
+     `cleanLines` pass (convert.js). The trailing-comma cleanup regexes there — TRAILING_ARRAY_COMMAS
+     and TRIM_INNER_TRAILING_OBJECT_COMMA — were written `(?:,+[^\S]*)+?` / `(,+[^\S]*)*?`: a `,+`
+     nested inside an outer quantifier is the classic (a+)+ that partitions a comma run exponentially.
+     Only a CLOSED array (`a=[,,,]`) or a comma-only line of a multiline object reaches it — closed so
+     it parses as a collection, comma-only so the closer the regex needs is far away. Measured pre-fix:
+     n=40 already hangs past 5s; single-line `a={,,,}` does NOT (the same-line `}` ends the search). */
+  'closed array pure comma storm': 'a=[' + ','.repeat(N) + ']',
+  'closed array trailing commas': 'a=[1,2' + ','.repeat(N) + ']',
+  'multiline object comma-only line': 'a={x:1\n' + ','.repeat(N) + '\ny:2}',
+  'multiline array comma-only line': 'a=[1\n' + ','.repeat(N) + '\n2]',
   'arrow fn giant args': 'fn=(' + 'a,'.repeat(N * 20) + ') => { x }',
   'arrow fn unclosed body': 'fn=() => {' + 'a b '.repeat(N),
   'many attrs last malformed': 'a=1 '.repeat(N) + 'bad="',
